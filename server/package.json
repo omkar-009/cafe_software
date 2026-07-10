@@ -1,0 +1,49 @@
+{
+  "name": "@restrosaas/server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "RestroSaaS API — Express + PostgreSQL + Socket.IO",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon --watch src src/server.js",
+    "start": "node src/server.js",
+    "db:migrate": "node src/db/migrate.js up",
+    "db:rollback": "node src/db/migrate.js down",
+    "db:status": "node src/db/migrate.js status",
+    "db:seed": "node src/db/seed.js",
+    "lint": "eslint \"src/**/*.js\""
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.7.4",
+    "cookie": "^0.6.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "nanoid": "^5.0.7",
+    "pg": "^8.13.0",
+    "pino": "^9.4.0",
+    "pino-http": "^10.3.0",
+    "pdfkit": "^0.15.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.0",
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "eslint": "^9.11.1",
+    "nodemon": "^3.1.7",
+    "pino-pretty": "^11.2.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

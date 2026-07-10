@@ -1,0 +1,55 @@
+# Local development stack.
+#   docker compose up -d postgres      → just the database
+#   docker compose up --build          → full stack (db + api + client)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: restrosaas-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-restro}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-restro}
+      POSTGRES_DB: ${DB_NAME:-restrosaas}
+    ports:
+      # Host 5433 → container 5432, avoiding conflicts with a locally-installed
+      # PostgreSQL that may already occupy 5432.
+      - '5433:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-restro} -d ${DB_NAME:-restrosaas}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: restrosaas-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./server/.env
+    environment:
+      DB_HOST: postgres
+      DATABASE_URL: postgresql://${DB_USER:-restro}:${DB_PASSWORD:-restro}@postgres:5432/${DB_NAME:-restrosaas}
+    ports:
+      - '4000:4000'
+    command: sh -c "npm run db:migrate && npm run db:seed && npm start"
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: restrosaas-client
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '5173:80'
+
+volumes:
+  pgdata:

@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 250 250 249;
+  --surface: 255 255 255;
+  --text: 24 24 27;
+  --muted: 113 113 122;
+  --border: 228 228 231;
+}
+.dark {
+  --bg: 9 9 11;
+  --surface: 24 24 27;
+  --text: 244 244 245;
+  --muted: 161 161 170;
+  --border: 39 39 42;
+}
+
+@layer base {
+  * { @apply border-zinc-200 dark:border-zinc-800; }
+  html { -webkit-tap-highlight-color: transparent; }
+  body {
+    @apply bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { @apply bg-zinc-300 dark:bg-zinc-700 rounded-full; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+}
+
+@layer components {
+  /* Glassmorphism surface */
+  .glass {
+    @apply bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-glass;
+  }
+  .glass-strong {
+    @apply bg-white/85 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/50 dark:border-white/10 shadow-glass-lg;
+  }
+  .card {
+    @apply rounded-2xl glass;
+  }
+  .skeleton {
+    @apply relative overflow-hidden bg-zinc-200/70 dark:bg-zinc-800/70 rounded-lg;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+  .aurora {
+    background:
+      radial-gradient(60% 60% at 20% 10%, rgba(249, 115, 22, 0.18), transparent 60%),
+      radial-gradient(50% 50% at 90% 20%, rgba(236, 72, 153, 0.12), transparent 60%),
+      radial-gradient(60% 60% at 50% 100%, rgba(59, 130, 246, 0.12), transparent 60%);
+  }
+}
