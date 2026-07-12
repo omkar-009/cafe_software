@@ -15,6 +15,25 @@ export async function list({ tenantId, activeOnly }) {
   return rows;
 }
 
+/**
+ * Coupons safe to advertise to customers on the menu: active, within their
+ * validity window, and not exhausted. Only non-sensitive fields are returned.
+ */
+export async function listActivePublic({ tenantId }) {
+  const { rows } = await query(
+    `SELECT code, description, type, value, min_order_amount, max_discount, expires_at
+       FROM coupons
+      WHERE tenant_id = $1 AND deleted_at IS NULL AND is_active = true
+        AND (starts_at IS NULL OR starts_at <= now())
+        AND (expires_at IS NULL OR expires_at > now())
+        AND (usage_limit IS NULL OR used_count < usage_limit)
+      ORDER BY value DESC, created_at DESC
+      LIMIT 10`,
+    [tenantId],
+  );
+  return rows;
+}
+
 export async function findById({ tenantId, id }) {
   const { rows } = await query(
     `SELECT ${COLS} FROM coupons WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,

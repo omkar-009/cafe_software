@@ -6,6 +6,7 @@ import { evaluateCoupon } from '../coupons/coupons.service.js';
 import { incrementUsage as incrementCouponUsage } from '../coupons/coupons.repository.js';
 import { notify } from '../notifications/notifications.service.js';
 import { emitToRole, emitToTenant, emitToOrder } from '../../realtime/socket.js';
+import { getMyTenant } from '../tenants/tenants.service.js';
 import { priceOrder } from './orders.pricing.js';
 import * as repo from './orders.repository.js';
 
@@ -54,11 +55,17 @@ export async function createOrder({
     const orderNumber = `ORD-${pad(seq)}`;
     const customerId = customer ? await repo.upsertCustomer({ tenantId, name: customer.name, phone: customer.phone, q }) : null;
 
+    // Configurable flow: some restaurants want new orders to skip the manual
+    // "accept" step and go straight to PREPARING (tenant setting).
+    const initialStatus = tenantSettings.autoStartPreparing
+      ? ORDER_STATUS.PREPARING
+      : ORDER_STATUS.PENDING;
+
     const created = await repo.insertOrder({
       tenantId,
       data: {
         orderNumber, tableId, floorId, customerId, waiterId,
-        status: ORDER_STATUS.PENDING, orderType,
+        status: initialStatus, orderType,
         subtotal: priced.subtotal, taxAmount: priced.taxAmount, discountAmount: priced.discountAmount,
         serviceCharge: priced.serviceCharge, totalAmount: priced.totalAmount,
         couponId: coupon?.id, couponCode: coupon?.code, customerNote, createdBy,
@@ -176,7 +183,77 @@ export async function changeStatus(req, { id, status }) {
 }
 
 export async function serveOrder(req, { id }) {
+  // Attribute the order to the serving waiter (drives waiter-performance analytics).
+  if (req.user.role === ROLES.WAITER) {
+    await repo.assignWaiter({ tenantId: req.tenantId, id, waiterId: req.user.id, actorId: req.user.id });
+  }
   return changeStatus(req, { id, status: ORDER_STATUS.SERVED });
+}
+
+/**
+ * Admin override edit — a Restaurant Admin can change an order at any time,
+ * bypassing the kitchen/waiter state machine: force any status, edit the note /
+ * priority, adjust item quantities, or remove items (totals are recomputed).
+ */
+export async function adminUpdateOrder(req, { id, status, customerNote, priority, items, removeItemIds }) {
+  const current = await repo.findFullById({ tenantId: req.tenantId, id });
+  if (!current) throw ApiError.notFound('Order not found');
+
+  const tenant = await getMyTenant(req.tenantId);
+  const settings = tenant.settings || {};
+  const serviceChargeRate = settings.enableServiceCharge ? Number(settings.serviceChargeRate || 0) : 0;
+
+  await withTransaction(async (q) => {
+    // Item edits (quantity changes + removals) then recompute money from items.
+    const itemsChanged = (items && items.length) || (removeItemIds && removeItemIds.length);
+    if (itemsChanged) {
+      if (removeItemIds?.length) await repo.deleteOrderItems({ tenantId: req.tenantId, orderId: id, itemIds: removeItemIds, q });
+      for (const it of items || []) {
+        // eslint-disable-next-line no-await-in-loop
+        await repo.updateOrderItemQuantity({ tenantId: req.tenantId, orderId: id, orderItemId: it.id, quantity: it.quantity, q });
+      }
+      const remaining = await repo.getOrderItemsForRecompute({ tenantId: req.tenantId, orderId: id, q });
+      if (!remaining.length) throw ApiError.badRequest('An order must have at least one item');
+
+      const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+      let subtotal = 0; let taxAmount = 0;
+      for (const r of remaining) {
+        subtotal += Number(r.line_total);
+        taxAmount += round2(Number(r.line_total) * (Number(r.tax_rate) / 100));
+      }
+      subtotal = round2(subtotal);
+      taxAmount = round2(taxAmount);
+      const discount = round2(Math.min(Number(current.discount_amount), subtotal));
+      const serviceCharge = round2(((subtotal - discount) * serviceChargeRate) / 100);
+      const totalAmount = round2(subtotal + taxAmount + serviceCharge - discount);
+      await repo.updateOrderMoney({ tenantId: req.tenantId, id, subtotal, taxAmount, discount, serviceCharge, totalAmount, q });
+    }
+
+    // Field / status override.
+    const fields = {};
+    if (customerNote !== undefined) fields.customer_note = customerNote;
+    if (priority !== undefined) fields.priority = priority;
+    if (status && status !== current.status) {
+      fields.status = status;
+      const tsField = TIMESTAMP_FIELD[status];
+      if (tsField) fields[tsField] = 'now()';
+    }
+    if (Object.keys(fields).length) {
+      await repo.updateOrderFields({ tenantId: req.tenantId, id, fields, actorId: req.user.id, q });
+    }
+  });
+
+  await auditFromRequest(req, {
+    module: AUDIT_MODULE.ORDER, action: 'ADMIN_EDIT', recordId: id,
+    description: `Admin edited order ${current.order_number}${status ? ` → ${status}` : ''}`,
+    oldValues: { status: current.status, total: current.total_amount },
+    newValues: { status: status || current.status },
+  });
+
+  const full = await repo.findFullById({ tenantId: req.tenantId, id });
+  emitToTenant(req.tenantId, 'order:updated', full);
+  emitToOrder(id, 'order:status', { orderId: id, status: full.status });
+  return full;
 }
 
 export async function cancelOrder(req, { id, reason }) {
@@ -210,8 +287,27 @@ export async function trackOrder({ tenantId, id }) {
     status: order.status,
     paymentStatus: order.payment_status,
     tableNumber: order.table_number,
+    subtotal: order.subtotal,
+    taxAmount: order.tax_amount,
+    discountAmount: order.discount_amount,
+    serviceCharge: order.service_charge,
     totalAmount: order.total_amount,
-    items: order.items.map((i) => ({ name: i.name_snapshot, quantity: i.quantity, status: i.status })),
+    items: order.items.map((i) => ({
+      name: i.name_snapshot,
+      variant: i.variant_snapshot,
+      quantity: i.quantity,
+      lineTotal: i.line_total,
+      status: i.status,
+    })),
+    // Status timeline so the customer sees live progress.
+    timeline: {
+      placedAt: order.created_at,
+      acceptedAt: order.accepted_at,
+      readyAt: order.ready_at,
+      servedAt: order.served_at,
+      completedAt: order.completed_at,
+      cancelledAt: order.cancelled_at,
+    },
     createdAt: order.created_at,
   };
 }

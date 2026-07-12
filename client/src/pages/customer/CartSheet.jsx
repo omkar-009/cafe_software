@@ -41,7 +41,7 @@ export default function CartSheet({ open, onClose, d, restaurant, onPlaced }) {
       }));
       clear();
       toast.success(`Order ${res.orderNumber} placed!`);
-      onPlaced(res.orderId);
+      onPlaced(res);
     } catch (err) {
       toast.error(err.message || 'Could not place order');
     } finally {

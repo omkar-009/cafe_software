@@ -36,5 +36,13 @@ export const listOrdersSchema = z.object({
 });
 
 export const changeStatusSchema = z.object({ status: z.nativeEnum(ORDER_STATUS) });
+
+export const adminUpdateOrderSchema = z.object({
+  status: z.nativeEnum(ORDER_STATUS).optional(),
+  customerNote: z.string().max(500).optional(),
+  priority: z.number().int().min(0).max(9).optional(),
+  items: z.array(z.object({ id: z.string().uuid(), quantity: z.number().int().min(1).max(99) })).max(100).optional(),
+  removeItemIds: z.array(z.string().uuid()).max(100).optional(),
+});
 export const cancelOrderSchema = z.object({ reason: z.string().max(300).optional() });
 export const idParamSchema = z.object({ id: z.string().uuid() });

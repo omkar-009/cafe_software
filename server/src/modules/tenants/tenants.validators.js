@@ -1,13 +1,20 @@
 import { z } from 'zod';
 import { TENANT_STATUS } from '../../shared/constants.js';
 
+// Accepts an absolute URL, a same-origin relative path (uploaded images), or ''.
+const imageField = z
+  .string()
+  .max(500)
+  .refine((v) => v === '' || /^(https?:\/\/|\/)/.test(v), 'Must be a URL or an uploaded image path')
+  .optional();
+
 export const updateTenantSchema = z.object({
   name: z.string().min(2).max(120).optional(),
   legalName: z.string().max(160).optional(),
   email: z.string().email().optional(),
   phone: z.string().max(20).optional(),
-  logoUrl: z.string().url().max(500).optional(),
-  coverUrl: z.string().url().max(500).optional(),
+  logoUrl: imageField,
+  coverUrl: imageField,
   brandColor: z.string().regex(/^#([0-9a-fA-F]{6})$/, 'Use a hex color like #F97316').optional(),
   menuHeader: z.string().max(2000).optional(),
   menuFooter: z.string().max(2000).optional(),
@@ -29,6 +36,9 @@ export const updateTenantSchema = z.object({
       serviceChargeRate: z.number().min(0).max(100).optional(),
       enableServiceCharge: z.boolean().optional(),
       currencySymbol: z.string().max(4).optional(),
+      // Order flow: when true, new orders skip the manual "accept" step and go
+      // straight to PREPARING.
+      autoStartPreparing: z.boolean().optional(),
     })
     .passthrough()
     .optional(),

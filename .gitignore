@@ -42,3 +42,6 @@ uploads/tmp/
 # Misc
 .cache/
 *.tsbuildinfo
+
+# Local uploaded files (use object storage in prod)
+server/uploads/

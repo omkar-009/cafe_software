@@ -65,3 +65,15 @@ export const cancel = catchAsync(async (req, res) => {
   const order = await service.cancelOrder(req, { id: req.params.id, reason: req.body.reason });
   return ok(res, { order }, { message: 'Order cancelled' });
 });
+
+export const adminUpdate = catchAsync(async (req, res) => {
+  const order = await service.adminUpdateOrder(req, {
+    id: req.params.id,
+    status: req.body.status,
+    customerNote: req.body.customerNote,
+    priority: req.body.priority,
+    items: req.body.items,
+    removeItemIds: req.body.removeItemIds,
+  });
+  return ok(res, { order }, { message: 'Order updated' });
+});

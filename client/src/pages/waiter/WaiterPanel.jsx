@@ -1,30 +1,45 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import dayjs from 'dayjs';
-import { Users, LogOut, Utensils, CreditCard, Download, Bell, Clock } from 'lucide-react';
+import {
+  Users, LogOut, Utensils, CreditCard, Download, Clock, User, IndianRupee, CircleDollarSign, CheckCircle2,
+} from 'lucide-react';
 import api, { request } from '@/lib/api';
 import { money } from '@/lib/cn';
 import { useAuth } from '@/store/auth';
 import { useSocketEvents, playBeep } from '@/hooks/useSocketEvents';
+import { rangeFor } from '@/lib/dateRange';
 import { Button, Badge, EmptyState, Spinner } from '@/components/ui';
 import ThemeToggle from '@/components/ThemeToggle';
+import DateFilter from '@/components/DateFilter';
+import ProfileModal from '@/components/ProfileModal';
 import NotificationBell from '@/components/admin/NotificationBell';
 
 const TABS = [
-  { key: 'active', label: 'Active', statuses: ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'DELAYED'] },
-  { key: 'ready', label: 'Ready to serve', statuses: ['READY'] },
-  { key: 'payment', label: 'Payment pending', statuses: ['SERVED'] },
+  { key: 'active', label: 'Active', match: (o) => ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'DELAYED'].includes(o.status) },
+  { key: 'ready', label: 'Ready to serve', match: (o) => o.status === 'READY' },
+  { key: 'payment', label: 'Payment pending', match: (o) => o.status === 'SERVED' && o.payment_status !== 'PAID' },
+  { key: 'paid', label: 'Paid', match: (o) => o.payment_status === 'PAID' },
+  { key: 'all', label: 'All', match: () => true },
 ];
+const STATUS_TONE = {
+  PENDING: 'amber', ACCEPTED: 'blue', PREPARING: 'brand', READY: 'green', SERVED: 'purple',
+  COMPLETED: 'green', CANCELLED: 'red', REJECTED: 'red', DELAYED: 'red',
+};
+const minsAgo = (t) => Math.max(0, Math.floor((Date.now() - new Date(t)) / 60000));
 
 export default function WaiterPanel() {
   const qc = useQueryClient();
   const { user, logout } = useAuth();
   const [tab, setTab] = useState('active');
+  const [preset, setPreset] = useState('today');
+  const [custom, setCustom] = useState({});
+  const [profile, setProfile] = useState(false);
 
+  const range = rangeFor(preset, custom);
   const { data, isLoading } = useQuery({
-    queryKey: ['waiter-orders'],
-    queryFn: () => request(api.get('/orders?limit=100')),
+    queryKey: ['waiter-orders', preset, custom],
+    queryFn: () => request(api.get(`/orders?limit=200&from=${range.from}&to=${range.to}`)),
     refetchInterval: 15000,
   });
   useSocketEvents({
@@ -44,56 +59,88 @@ export default function WaiterPanel() {
     onError: (e) => toast.error(e.message),
   });
 
-  const active = TABS.find((t) => t.key === tab);
-  const orders = (data?.orders || []).filter((o) => active.statuses.includes(o.status) && (tab !== 'payment' || o.payment_status !== 'PAID'));
+  const all = data?.orders || [];
+  const orders = useMemo(() => all.filter(TABS.find((t) => t.key === tab).match), [all, tab]);
+
+  // Mini dashboard stats for the selected range.
+  const stats = useMemo(() => ({
+    served: all.filter((o) => o.served_at || ['SERVED', 'COMPLETED'].includes(o.status)).length,
+    pendingPay: all.filter((o) => o.status === 'SERVED' && o.payment_status !== 'PAID').length,
+    collected: all.filter((o) => o.payment_status === 'PAID').reduce((s, o) => s + Number(o.total_amount), 0),
+  }), [all]);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 px-4 py-3 backdrop-blur-xl">
+      <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 px-4 py-3 backdrop-blur-xl">
         <div className="flex items-center gap-2.5">
           <div className="grid h-9 w-9 place-items-center rounded-xl bg-brand-500"><Users className="h-5 w-5 text-white" /></div>
           <div><h1 className="font-extrabold leading-none">Waiter</h1><p className="text-xs text-zinc-500">{user?.fullName}</p></div>
         </div>
-        <div className="flex items-center gap-2"><NotificationBell /><ThemeToggle /><Button variant="ghost" size="icon" onClick={logout}><LogOut className="h-5 w-5" /></Button></div>
+        <div className="flex items-center gap-2">
+          <DateFilter value={preset} onChange={setPreset} custom={custom} onCustomChange={setCustom} />
+          <NotificationBell />
+          <Button variant="ghost" size="icon" onClick={() => setProfile(true)}><User className="h-5 w-5" /></Button>
+          <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={logout}><LogOut className="h-5 w-5" /></Button>
+        </div>
       </header>
 
-      <div className="sticky top-[57px] z-10 flex gap-2 overflow-x-auto border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/90 dark:bg-zinc-950/90 px-4 py-2 backdrop-blur">
+      {/* Mini dashboard */}
+      <div className="grid grid-cols-3 gap-3 p-4 pb-0">
+        <Stat icon={CheckCircle2} label="Served" value={stats.served} tone="text-purple-500" />
+        <Stat icon={CircleDollarSign} label="Payment due" value={stats.pendingPay} tone="text-amber-500" />
+        <Stat icon={IndianRupee} label="Collected" value={money(stats.collected)} tone="text-emerald-500" />
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 overflow-x-auto px-4 py-3">
         {TABS.map((t) => {
-          const cnt = (data?.orders || []).filter((o) => t.statuses.includes(o.status) && (t.key !== 'payment' || o.payment_status !== 'PAID')).length;
+          const cnt = all.filter(t.match).length;
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold ${tab === t.key ? 'bg-brand-500 text-white' : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800'}`}>
-              {t.label} {cnt > 0 && <span className={`ml-1 rounded-full px-1.5 text-xs ${tab === t.key ? 'bg-white/25' : 'bg-brand-100 text-brand-700'}`}>{cnt}</span>}
+              {t.label} {cnt > 0 && <span className={`ml-1 rounded-full px-1.5 text-xs ${tab === t.key ? 'bg-white/25' : 'bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300'}`}>{cnt}</span>}
             </button>
           );
         })}
       </div>
 
       {isLoading ? <div className="grid place-items-center py-32"><Spinner className="h-8 w-8" /></div>
-        : orders.length === 0 ? <EmptyState icon={Bell} title="Nothing here" description="Orders will appear as they progress." />
+        : orders.length === 0 ? <EmptyState icon={Utensils} title="Nothing here" description="Orders appear as they progress." />
           : (
-            <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-2 p-4 pt-0">
               {orders.map((o) => (
-                <div key={o.id} className="card">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold">{o.order_number}</span>
-                    <Badge tone={o.status === 'READY' ? 'green' : o.status === 'SERVED' ? 'purple' : 'amber'}>{o.status}</Badge>
+                <div key={o.id} className="flex flex-col gap-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 sm:flex-row sm:items-center">
+                  <div className="flex items-center gap-3 sm:w-52 sm:shrink-0">
+                    <div>
+                      <p className="font-bold">{o.order_number}</p>
+                      <p className="text-sm text-zinc-500">{o.table_number ? `Table ${o.table_number}` : o.order_type}</p>
+                    </div>
+                    <span className="ml-auto flex items-center gap-1 text-sm text-zinc-400 sm:ml-0"><Clock className="h-3.5 w-3.5" />{minsAgo(o.created_at)}m</span>
                   </div>
-                  <div className="mt-1 flex items-center justify-between text-sm text-zinc-500">
-                    <span>{o.table_number ? `Table ${o.table_number}` : o.order_type}</span>
-                    <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{dayjs(o.created_at).format('HH:mm')}</span>
-                  </div>
-                  <p className="mt-2 text-sm text-zinc-400">{o.item_count} items</p>
-                  <p className="text-lg font-bold">{money(o.total_amount)}</p>
-                  <div className="mt-3 flex gap-2">
-                    {o.status === 'READY' && <Button size="sm" className="flex-1" onClick={() => serve.mutate(o.id)} loading={serve.isPending}><Utensils className="h-4 w-4" /> Serve</Button>}
-                    {o.status === 'SERVED' && o.payment_status !== 'PAID' && <Button size="sm" className="flex-1" onClick={() => pay.mutate(o.id)} loading={pay.isPending}><CreditCard className="h-4 w-4" /> Take Payment</Button>}
-                    <Button variant="outline" size="sm" onClick={() => window.open(`/api/v1/billing/orders/${o.id}/invoice.pdf`, '_blank')}><Download className="h-4 w-4" /></Button>
+                  <div className="flex-1 text-sm text-zinc-500">{o.item_count} items · <b className="text-zinc-800 dark:text-zinc-200">{money(o.total_amount)}</b></div>
+                  <div className="flex items-center gap-2">
+                    <Badge tone={STATUS_TONE[o.status]}>{o.status}</Badge>
+                    <Badge tone={o.payment_status === 'PAID' ? 'green' : 'gray'}>{o.payment_status}</Badge>
+                    {o.status === 'READY' && <Button size="sm" onClick={() => serve.mutate(o.id)} disabled={serve.isPending}><Utensils className="h-4 w-4" /> Serve</Button>}
+                    {o.status === 'SERVED' && o.payment_status !== 'PAID' && <Button size="sm" onClick={() => pay.mutate(o.id)} disabled={pay.isPending}><CreditCard className="h-4 w-4" /> Payment</Button>}
+                    <Button variant="outline" size="icon" onClick={() => window.open(`/api/v1/billing/orders/${o.id}/invoice.pdf`, '_blank')}><Download className="h-4 w-4" /></Button>
                   </div>
                 </div>
               ))}
             </div>
           )}
+
+      <ProfileModal open={profile} onClose={() => setProfile(false)} />
+    </div>
+  );
+}
+
+function Stat({ icon: Icon, label, value, tone }) {
+  return (
+    <div className="card flex items-center gap-3 p-3.5">
+      <Icon className={`h-6 w-6 ${tone}`} />
+      <div><p className="text-xs text-zinc-500">{label}</p><p className="text-lg font-bold">{value}</p></div>
     </div>
   );
 }

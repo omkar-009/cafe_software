@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { Search, Leaf, ShoppingBag, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import dayjs from 'dayjs';
+import { Search, Leaf, ShoppingBag, AlertTriangle, ReceiptText, X, ChevronRight } from 'lucide-react';
 import api, { request } from '@/lib/api';
 import { useCart } from '@/store/cart';
+import { useOrderHistory } from '@/store/orders';
 import { Spinner, Badge, EmptyState, Skeleton } from '@/components/ui';
 import ThemeToggle from '@/components/ThemeToggle';
 import MenuItemCard from './MenuItemCard';
@@ -20,10 +22,13 @@ export default function CustomerApp() {
   const [vegOnly, setVegOnly] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
-  const [placedOrderId, setPlacedOrderId] = useState(null);
+  const [viewOrderId, setViewOrderId] = useState(null);
+  const [ordersOpen, setOrdersOpen] = useState(false);
 
   const count = useCart((s) => s.count());
   const subtotal = useCart((s) => s.subtotal());
+  const addHistory = useOrderHistory((s) => s.add);
+  const allOrders = useOrderHistory((s) => s.orders);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['resolve', d],
@@ -48,15 +53,37 @@ export default function CustomerApp() {
   if (!d) return <CenterMessage icon={AlertTriangle} title="Invalid QR code" text="Please scan the QR code on your table." />;
   if (isLoading) return <MenuSkeleton />;
   if (isError) return <CenterMessage icon={AlertTriangle} title="Couldn't load menu" text={error?.message || 'This QR may have expired.'} />;
-  if (placedOrderId) return <OrderTracking d={d} orderId={placedOrderId} restaurant={data.restaurant} onNewOrder={() => setPlacedOrderId(null)} />;
 
   const { restaurant, table, categories } = data;
+  const myOrders = allOrders.filter((o) => o.tenantSlug === restaurant.slug);
+
+  // A specific order's live tracking view.
+  if (viewOrderId) {
+    const entry = myOrders.find((o) => o.orderId === viewOrderId);
+    return (
+      <OrderTracking
+        d={entry?.d || d}
+        orderId={viewOrderId}
+        restaurant={restaurant}
+        onBack={() => setViewOrderId(null)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-28">
       {/* Header / branding */}
       <div className="relative aurora">
-        <div className="absolute right-4 top-4 z-10"><ThemeToggle /></div>
+        <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
+          {myOrders.length > 0 && (
+            <button onClick={() => setOrdersOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl glass px-3 py-2 text-sm font-semibold shadow-glass">
+              <ReceiptText className="h-4 w-4" /> My Orders
+              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] text-white">{myOrders.length}</span>
+            </button>
+          )}
+          <ThemeToggle />
+        </div>
         <div className="mx-auto max-w-2xl px-5 pb-6 pt-8">
           <div className="flex items-center gap-4">
             {restaurant.logoUrl
@@ -124,8 +151,49 @@ export default function CustomerApp() {
 
       <ItemModal item={selectedItem} symbol={symbol} onClose={() => setSelectedItem(null)} />
       <CartSheet open={cartOpen} onClose={() => setCartOpen(false)} d={d} restaurant={restaurant}
-        onPlaced={(orderId) => { setCartOpen(false); setPlacedOrderId(orderId); }} />
+        onPlaced={(res) => {
+          setCartOpen(false);
+          addHistory({ orderId: res.orderId, orderNumber: res.orderNumber, tenantSlug: restaurant.slug, tenantName: restaurant.name, d });
+          setViewOrderId(res.orderId);
+        }} />
+
+      <OrdersDrawer open={ordersOpen} onClose={() => setOrdersOpen(false)} orders={myOrders}
+        onOpen={(id) => { setOrdersOpen(false); setViewOrderId(id); }} />
     </div>
+  );
+}
+
+function OrdersDrawer({ open, onClose, orders, onOpen }) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div className="fixed inset-0 z-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+          <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className="glass-strong absolute inset-x-0 bottom-0 z-10 max-h-[80vh] overflow-y-auto rounded-t-3xl p-5">
+            <div className="mx-auto max-w-2xl">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold">My Orders</h2>
+                <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800"><X className="h-5 w-5" /></button>
+              </div>
+              <div className="space-y-2">
+                {orders.map((o) => (
+                  <button key={o.orderId} onClick={() => onOpen(o.orderId)}
+                    className="flex w-full items-center justify-between rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                    <div>
+                      <p className="font-bold">{o.orderNumber}</p>
+                      <p className="text-xs text-zinc-400">{dayjs(o.placedAt).format('DD MMM, HH:mm')}</p>
+                    </div>
+                    <span className="flex items-center gap-1 text-sm text-brand-600">Track <ChevronRight className="h-4 w-4" /></span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

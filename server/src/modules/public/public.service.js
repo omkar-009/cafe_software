@@ -5,6 +5,7 @@ import * as tablesRepo from '../tables/tables.repository.js';
 import * as tenantsRepo from '../tenants/tenants.repository.js';
 import * as menuRepo from '../menu/menu.repository.js';
 import * as categoriesRepo from '../categories/categories.repository.js';
+import * as couponsRepo from '../coupons/coupons.repository.js';
 import { createOrder, trackOrder } from '../orders/orders.service.js';
 import { previewCoupon } from '../coupons/coupons.service.js';
 
@@ -55,10 +56,14 @@ function publicBranding(tenant) {
 /** Resolve a scanned QR → restaurant branding + table + full menu. */
 export async function resolveQr(encoded) {
   const { tenant, table } = await resolveContext(encoded);
-  const menu = await buildMenu(tenant.id);
+  const [menu, coupons] = await Promise.all([
+    buildMenu(tenant.id),
+    couponsRepo.listActivePublic({ tenantId: tenant.id }),
+  ]);
   return {
     restaurant: publicBranding(tenant),
     table: { id: table.id, tableNumber: table.table_number, floorId: table.floor_id },
+    offers: coupons,
     ...menu,
   };
 }

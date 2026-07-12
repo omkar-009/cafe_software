@@ -20,8 +20,18 @@ api.interceptors.request.use((config) => {
     const csrf = getCookie('rs_csrf');
     if (csrf) config.headers['X-CSRF-Token'] = csrf;
   }
+  // For file uploads, drop the JSON Content-Type so the browser sets the correct
+  // multipart/form-data header (with boundary).
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    config.headers.delete ? config.headers.delete('Content-Type') : (config.headers['Content-Type'] = undefined);
+  }
   return config;
 });
+
+// Endpoints whose own 401 must NOT trigger a refresh (would loop or is genuine).
+// NOTE: /auth/me IS allowed to refresh — that's how an expired access token is
+// silently renewed from a still-valid refresh token on app load.
+const NO_REFRESH = ['/auth/refresh', '/auth/login', '/auth/logout'];
 
 // Transparent access-token refresh on 401 (single retry), then bubble up.
 let refreshing = null;
@@ -29,13 +39,15 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const { config, response } = error;
-    if (response?.status === 401 && !config._retry && !config.url.includes('/auth/')) {
+    const skip = NO_REFRESH.some((p) => config?.url?.includes(p));
+    if (response?.status === 401 && config && !config._retry && !skip) {
       config._retry = true;
       try {
+        // Dedupe concurrent refreshes into a single in-flight request.
         refreshing = refreshing || api.post('/auth/refresh');
         await refreshing;
         refreshing = null;
-        return api(config);
+        return api(config); // retry the original request with the new access cookie
       } catch (e) {
         refreshing = null;
         window.dispatchEvent(new CustomEvent('auth:logout'));

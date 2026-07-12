@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis,
@@ -15,6 +16,7 @@ import StatCard from '@/components/admin/StatCard';
 
 export default function DashboardPage() {
   const t = useChartTokens();
+  const [salesMetric, setSalesMetric] = useState('revenue');
   const { data, isLoading } = useQuery({
     queryKey: ['analytics-dashboard'],
     queryFn: () => request(api.get('/analytics/dashboard')),
@@ -51,14 +53,22 @@ export default function DashboardPage() {
         <StatCard label="Avg Prep" value={`${k.avgPrepMins} min`} icon={Timer} tone="green" />
       </div>
 
-      {/* Sales trend (single-series area, brand hue) */}
+      {/* Sales trend — single axis; toggle between Revenue and Orders count */}
       <Card>
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="font-bold">Sales trend</h3>
-            <p className="text-sm text-zinc-500">Revenue over the last 30 days</p>
+            <p className="text-sm text-zinc-500">{salesMetric === 'revenue' ? 'Revenue' : 'Order count'} per day</p>
           </div>
-          <Button variant="outline" size="sm" onClick={exportSales}><Download className="h-4 w-4" /> Export</Button>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-zinc-200 dark:border-zinc-800 p-0.5">
+              {['revenue', 'orders'].map((m) => (
+                <button key={m} onClick={() => setSalesMetric(m)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-semibold capitalize ${salesMetric === m ? 'bg-brand-500 text-white' : 'text-zinc-500'}`}>{m}</button>
+              ))}
+            </div>
+            <Button variant="outline" size="sm" onClick={exportSales}><Download className="h-4 w-4" /> Export</Button>
+          </div>
         </div>
         {sales.length === 0 ? <EmptyState icon={TrendingUp} title="No sales yet" description="Data appears once you take orders." /> : (
           <ResponsiveContainer width="100%" height={280}>
@@ -71,10 +81,10 @@ export default function DashboardPage() {
               </defs>
               <CartesianGrid stroke={t.grid} vertical={false} />
               <XAxis dataKey="label" tick={{ fill: t.axis, fontSize: 12 }} tickLine={false} axisLine={{ stroke: t.grid }} />
-              <YAxis tick={{ fill: t.axis, fontSize: 12 }} tickLine={false} axisLine={false} width={56}
-                tickFormatter={(v) => `${sym}${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`} />
-              <Tooltip content={<ChartTip t={t} prefix={sym} />} cursor={{ stroke: t.brand, strokeWidth: 1, strokeDasharray: '4 4' }} />
-              <Area type="monotone" dataKey="revenue" stroke={t.brand} strokeWidth={2} fill="url(#revFill)" dot={false} activeDot={{ r: 5, fill: t.brand }} />
+              <YAxis tick={{ fill: t.axis, fontSize: 12 }} tickLine={false} axisLine={false} width={56} allowDecimals={false}
+                tickFormatter={(v) => (salesMetric === 'revenue' ? `${sym}${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}` : v)} />
+              <Tooltip content={<SalesTip t={t} sym={sym} />} cursor={{ stroke: t.brand, strokeWidth: 1, strokeDasharray: '4 4' }} />
+              <Area type="monotone" dataKey={salesMetric} stroke={t.brand} strokeWidth={2} fill="url(#revFill)" dot={false} activeDot={{ r: 5, fill: t.brand }} />
             </AreaChart>
           </ResponsiveContainer>
         )}
@@ -169,6 +179,18 @@ function Legend({ color, label, value }) {
       <span className="h-3 w-3 rounded-sm" style={{ background: color }} />
       <span className="text-zinc-500">{label}</span>
       <b className="tabular-nums">{value}</b>
+    </div>
+  );
+}
+
+function SalesTip({ active, payload, label, t, sym }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="rounded-lg border px-3 py-2 text-sm shadow-glass" style={{ background: t.surface, borderColor: t.grid, color: t.text }}>
+      <p className="mb-0.5 font-semibold">{label}</p>
+      <p className="tabular-nums">Revenue: <b>{sym}{Number(d.revenue).toLocaleString('en-IN')}</b></p>
+      <p className="tabular-nums">Orders: <b>{d.orders}</b></p>
     </div>
   );
 }

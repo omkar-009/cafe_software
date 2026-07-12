@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Check, ChefHat, Bell, Utensils, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Check, ChefHat, Bell, Utensils, Clock, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
 import api, { request } from '@/lib/api';
 import { Button, Spinner } from '@/components/ui';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -13,13 +13,16 @@ const STEPS = [
   { key: 'SERVED', label: 'Served', icon: Utensils },
 ];
 const ORDER = STEPS.map((s) => s.key);
+// COMPLETED implies the whole flow is done.
+const idxForStatus = (s) => (s === 'COMPLETED' ? ORDER.length - 1 : ORDER.indexOf(s));
 
-export default function OrderTracking({ d, orderId, restaurant, onNewOrder }) {
+export default function OrderTracking({ d, orderId, restaurant, onBack }) {
   const symbol = restaurant.currencySymbol || '₹';
   const { data, isLoading } = useQuery({
     queryKey: ['track', orderId],
     queryFn: () => request(api.get(`/public/orders/${orderId}?d=${encodeURIComponent(d)}`)),
-    refetchInterval: 5000,
+    refetchInterval: 4000,
+    refetchOnWindowFocus: true,
   });
 
   if (isLoading) return <div className="grid min-h-screen place-items-center aurora"><Spinner className="h-8 w-8" /></div>;
@@ -27,12 +30,20 @@ export default function OrderTracking({ d, orderId, restaurant, onNewOrder }) {
   const status = data?.status || 'PENDING';
   const cancelled = status === 'CANCELLED' || status === 'REJECTED';
   const completed = status === 'COMPLETED';
-  const currentIdx = ORDER.indexOf(status);
+  const currentIdx = idxForStatus(status);
 
   return (
     <div className="min-h-screen aurora">
-      <div className="absolute right-4 top-4"><ThemeToggle /></div>
+      <div className="absolute inset-x-0 top-4 flex items-center justify-between px-4">
+        <button onClick={onBack} className="flex items-center gap-1.5 rounded-xl glass px-3 py-2 text-sm font-medium shadow-glass">
+          <ArrowLeft className="h-4 w-4" /> Menu
+        </button>
+        <ThemeToggle />
+      </div>
       <div className="mx-auto max-w-md px-5 py-10">
+        <div className="mb-2 flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" /> Live status
+        </div>
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
           <div className={`mx-auto grid h-20 w-20 place-items-center rounded-full ${cancelled ? 'bg-red-500' : 'bg-brand-500'} shadow-glow ${!completed && !cancelled ? 'animate-pulse-ring' : ''}`}>
             {cancelled ? <XCircle className="h-10 w-10 text-white" /> : completed ? <CheckCircle2 className="h-10 w-10 text-white" /> : <Clock className="h-10 w-10 text-white" />}
@@ -81,7 +92,7 @@ export default function OrderTracking({ d, orderId, restaurant, onNewOrder }) {
           <p className="mt-2 text-xs text-zinc-400">Payment: {data?.paymentStatus?.toLowerCase()}</p>
         </div>
 
-        <Button variant="outline" className="mt-6 w-full" onClick={onNewOrder}>Order more items</Button>
+        <Button variant="outline" className="mt-6 w-full" onClick={onBack}>Order more items</Button>
       </div>
     </div>
   );

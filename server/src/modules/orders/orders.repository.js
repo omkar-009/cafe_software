@@ -189,6 +189,62 @@ export async function updateStatus({ tenantId, id, status, timestampField, actor
   return rows[0] || null;
 }
 
+/* ── Admin edit helpers ── */
+
+export async function deleteOrderItems({ tenantId, orderId, itemIds, q = query }) {
+  if (!itemIds?.length) return;
+  await q(
+    'DELETE FROM order_items WHERE id = ANY($1::uuid[]) AND order_id = $2 AND tenant_id = $3',
+    [itemIds, orderId, tenantId],
+  );
+}
+
+export async function updateOrderItemQuantity({ tenantId, orderId, orderItemId, quantity, q = query }) {
+  // $1 is cast to int in BOTH uses so Postgres deduces a single, consistent type
+  // (avoids "inconsistent types deduced for parameter $1").
+  await q(
+    `UPDATE order_items
+        SET quantity = $1::int, line_total = round((unit_price + addons_total) * $1::int, 2)
+      WHERE id = $2 AND order_id = $3 AND tenant_id = $4`,
+    [quantity, orderItemId, orderId, tenantId],
+  );
+}
+
+export async function getOrderItemsForRecompute({ tenantId, orderId, q = query }) {
+  const { rows } = await q(
+    'SELECT line_total, tax_rate FROM order_items WHERE order_id = $1 AND tenant_id = $2',
+    [orderId, tenantId],
+  );
+  return rows;
+}
+
+export async function updateOrderMoney({ tenantId, id, subtotal, taxAmount, discount, serviceCharge, totalAmount, q = query }) {
+  await q(
+    `UPDATE orders SET subtotal = $1, tax_amount = $2, discount_amount = $3,
+            service_charge = $4, total_amount = $5
+      WHERE id = $6 AND tenant_id = $7`,
+    [subtotal, taxAmount, discount, serviceCharge, totalAmount, id, tenantId],
+  );
+}
+
+/** Update whitelisted order fields; a value of the literal string 'now()' → SQL now(). */
+export async function updateOrderFields({ tenantId, id, fields, actorId, q = query }) {
+  const allowed = ['status', 'customer_note', 'priority', 'accepted_at', 'ready_at', 'served_at', 'completed_at', 'cancelled_at'];
+  const sets = ['updated_by = $1'];
+  const params = [actorId];
+  for (const [col, val] of Object.entries(fields)) {
+    if (!allowed.includes(col)) continue;
+    if (val === 'now()') { sets.push(`${col} = now()`); continue; }
+    params.push(val);
+    sets.push(`${col} = $${params.length}`);
+  }
+  params.push(id, tenantId);
+  await q(
+    `UPDATE orders SET ${sets.join(', ')} WHERE id = $${params.length - 1} AND tenant_id = $${params.length}`,
+    params,
+  );
+}
+
 export async function assignWaiter({ tenantId, id, waiterId, actorId }) {
   const { rows } = await query(
     `UPDATE orders SET waiter_id = $1, updated_by = $2
