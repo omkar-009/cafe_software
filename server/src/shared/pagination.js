@@ -7,7 +7,7 @@
  * them by hand.
  */
 
-const MAX_LIMIT = 100;
+const MAX_LIMIT = 200;
 const DEFAULT_LIMIT = 20;
 
 export function parseLimit(rawLimit, fallback = DEFAULT_LIMIT) {

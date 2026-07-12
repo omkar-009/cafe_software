@@ -32,7 +32,7 @@ export const listOrdersSchema = z.object({
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
   page: z.coerce.number().min(1).optional(),
-  limit: z.coerce.number().min(1).max(100).optional(),
+  limit: z.coerce.number().min(1).max(200).optional(),
 });
 
 export const changeStatusSchema = z.object({ status: z.nativeEnum(ORDER_STATUS) });

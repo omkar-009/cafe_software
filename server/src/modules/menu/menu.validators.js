@@ -67,7 +67,7 @@ export const listItemsSchema = z.object({
   search: z.string().max(120).optional(),
   availableOnly: z.coerce.boolean().optional(),
   page: z.coerce.number().min(1).optional(),
-  limit: z.coerce.number().min(1).max(100).optional(),
+  limit: z.coerce.number().min(1).max(200).optional(),
 });
 
 export const idParamSchema = z.object({ id: z.string().uuid() });

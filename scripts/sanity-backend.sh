@@ -97,6 +97,11 @@ KCODE=$(curl -s -b /tmp/kj.txt -o /dev/null -w "%{http_code}" "$BASE/staff")
 NOCSRF=$(curl -s -b "$CJ" -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -X POST "$BASE/categories" -d '{"name":"x"}')
 [ "$NOCSRF" = "403" ] && { PASS=$((PASS+1)); echo "  ✅ CSRF enforced (403)"; } || { FAIL=$((FAIL+1)); echo "  ❌ CSRF not enforced ($NOCSRF)"; }
 
+# ── Clean up data this run created (so the menu/analytics stay tidy) ──
+CS=$(grep rs_csrf "$CJ" | awk '{print $NF}')
+[ -n "$MID" ] && curl -s -b "$CJ" -H "X-CSRF-Token: $CS" -X DELETE "$BASE/menu/$MID" -o /dev/null
+[ -n "$CATID" ] && curl -s -b "$CJ" -H "X-CSRF-Token: $CS" -X DELETE "$BASE/categories/$CATID" -o /dev/null
+
 echo ""
 echo "════════════════════════════════"
 echo "  RESULT: $PASS passed, $FAIL failed"

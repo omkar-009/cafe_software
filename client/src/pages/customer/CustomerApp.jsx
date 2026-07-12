@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import dayjs from 'dayjs';
-import { Search, Leaf, ShoppingBag, AlertTriangle, ReceiptText, X, ChevronRight } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Search, Leaf, ShoppingBag, AlertTriangle, ReceiptText, X, ChevronRight, Ticket } from 'lucide-react';
 import api, { request } from '@/lib/api';
 import { useCart } from '@/store/cart';
 import { useOrderHistory } from '@/store/orders';
@@ -99,6 +100,33 @@ export default function CustomerApp() {
           )}
         </div>
       </div>
+
+      {/* Available offers (active, non-expired coupons) */}
+      {data.offers?.length > 0 && (
+        <div className="mx-auto max-w-2xl px-5 pt-4">
+          <p className="mb-2 text-sm font-bold">Available offers</p>
+          <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {data.offers.map((o) => {
+              const off = o.type === 'PERCENTAGE' ? `${Number(o.value)}% OFF` : `${symbol}${Number(o.value)} OFF`;
+              const bits = [];
+              if (o.type === 'PERCENTAGE' && Number(o.max_discount) > 0) bits.push(`up to ${symbol}${Number(o.max_discount)}`);
+              if (Number(o.min_order_amount) > 0) bits.push(`min ${symbol}${Number(o.min_order_amount)}`);
+              return (
+                <button key={o.code}
+                  onClick={() => { navigator.clipboard?.writeText(o.code); toast.success(`Copied “${o.code}”`); }}
+                  className="flex min-w-[220px] shrink-0 items-center gap-3 rounded-2xl border-2 border-dashed border-brand-400 bg-brand-50/60 dark:bg-brand-500/10 p-3 text-left">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-500 text-white"><Ticket className="h-5 w-5" /></div>
+                  <div className="min-w-0">
+                    <p className="font-extrabold text-brand-600 dark:text-brand-400">{off}</p>
+                    {bits.length > 0 && <p className="text-xs text-zinc-500">{bits.join(' · ')}</p>}
+                    <p className="mt-0.5 font-mono text-xs font-bold">{o.code} · tap to copy</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Search + filters (sticky) */}
       <div className="sticky top-0 z-20 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/80 backdrop-blur-xl">
