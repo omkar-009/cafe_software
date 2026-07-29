@@ -69,6 +69,7 @@ export function priceOrder({ cart, itemsById, variantsById, addonsById, discount
       quantity: qty,
       addonsTotal: round2(addonsTotal),
       taxRate: Number(item.tax_rate),
+      costSnapshot: round2(Number(item.cost_price || 0)), // for COGS / profit reporting
       lineTotal: lineBase,
       note: entry.note || null,
       addons,

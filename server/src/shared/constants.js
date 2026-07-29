@@ -65,6 +65,16 @@ export const PERMISSIONS = Object.freeze({
   ANALYTICS_VIEW: 'analytics:view',
   REPORT_EXPORT: 'report:export',
 
+  // Finance (expenses + profit/loss)
+  EXPENSE_VIEW: 'expense:view',
+  EXPENSE_MANAGE: 'expense:manage',
+  FINANCE_VIEW: 'finance:view',
+
+  // Attendance
+  ATTENDANCE_VIEW: 'attendance:view',     // see everyone's attendance (admin)
+  ATTENDANCE_MANAGE: 'attendance:manage', // mark/override + payroll (admin)
+  ATTENDANCE_SELF: 'attendance:self',     // check in/out + view own (all staff)
+
   // Audit / settings / notifications
   AUDIT_VIEW: 'audit:view',
   SETTINGS_MANAGE: 'settings:manage',
@@ -85,7 +95,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.RESTAURANT_ADMIN]: Object.values(P).filter(
     (p) => ![P.PLATFORM_MANAGE, P.TENANT_MANAGE, P.SUBSCRIPTION_MANAGE].includes(p),
   ),
-  [ROLES.KITCHEN]: [P.ORDER_VIEW, P.ORDER_UPDATE_STATUS, P.NOTIFICATION_VIEW, P.MENU_VIEW],
+  [ROLES.KITCHEN]: [P.ORDER_VIEW, P.ORDER_UPDATE_STATUS, P.NOTIFICATION_VIEW, P.MENU_VIEW, P.ATTENDANCE_SELF],
   [ROLES.WAITER]: [
     P.ORDER_VIEW,
     P.ORDER_SERVE,
@@ -96,6 +106,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
     P.TABLE_VIEW,
     P.NOTIFICATION_VIEW,
     P.MENU_VIEW,
+    P.ATTENDANCE_SELF,
   ],
   [ROLES.CUSTOMER]: [P.MENU_VIEW, P.ORDER_CREATE, P.ORDER_VIEW, P.BILL_VIEW],
 });
@@ -153,6 +164,36 @@ export const FOOD_TYPE = Object.freeze({
   VEGAN: 'VEGAN',
 });
 
+/** Expense categories (cafe/restaurant operating costs). */
+export const EXPENSE_CATEGORY = Object.freeze({
+  INGREDIENTS: 'INGREDIENTS',
+  SALARIES: 'SALARIES',
+  RENT: 'RENT',
+  UTILITIES: 'UTILITIES',
+  MARKETING: 'MARKETING',
+  MAINTENANCE: 'MAINTENANCE',
+  EQUIPMENT: 'EQUIPMENT',
+  PACKAGING: 'PACKAGING',
+  TAXES: 'TAXES',
+  OTHER: 'OTHER',
+});
+
+export const EXPENSE_PAYMENT_METHOD = Object.freeze({
+  CASH: 'CASH',
+  CARD: 'CARD',
+  UPI: 'UPI',
+  BANK: 'BANK',
+  OTHER: 'OTHER',
+});
+
+export const ATTENDANCE_STATUS = Object.freeze({
+  PRESENT: 'PRESENT',
+  ABSENT: 'ABSENT',
+  HALF_DAY: 'HALF_DAY',
+  LEAVE: 'LEAVE',
+  WEEKLY_OFF: 'WEEKLY_OFF',
+});
+
 /** Audit modules — used for filtering audit logs. */
 export const AUDIT_MODULE = Object.freeze({
   AUTH: 'AUTH',
@@ -167,4 +208,7 @@ export const AUDIT_MODULE = Object.freeze({
   SETTINGS: 'SETTINGS',
   TENANT: 'TENANT',
   SUBSCRIPTION: 'SUBSCRIPTION',
+  EXPENSE: 'EXPENSE',
+  FINANCE: 'FINANCE',
+  ATTENDANCE: 'ATTENDANCE',
 });

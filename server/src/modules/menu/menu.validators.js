@@ -35,6 +35,7 @@ export const createItemSchema = z.object({
   name: z.string().min(1).max(120),
   description: z.string().max(1000).optional(),
   price: z.number().min(0),
+  costPrice: z.number().min(0).optional(),
   taxRate: z.number().min(0).max(100).optional(),
   foodType: z.nativeEnum(FOOD_TYPE).optional(),
   spicyLevel: z.number().int().min(0).max(3).optional(),

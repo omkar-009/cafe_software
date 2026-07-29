@@ -51,7 +51,11 @@ export default function MenuPage() {
                   <div className="flex items-start justify-between">
                     <div className="min-w-0">
                       <p className="font-bold">{it.name}</p>
-                      <p className="text-sm text-zinc-500">{money(it.price)} · {it.category_name || 'Uncategorized'}</p>
+                      <p className="text-sm text-zinc-500">
+                        {money(it.price)}
+                        {Number(it.cost_price) > 0 && <span className="ml-1 text-emerald-600 dark:text-emerald-400">· {Math.round(((Number(it.price) - Number(it.cost_price)) / Number(it.price)) * 100)}% margin</span>}
+                        {' · '}{it.category_name || 'Uncategorized'}
+                      </p>
                     </div>
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" onClick={() => setItemModal({ mode: 'edit', id: it.id })}><Pencil className="h-4 w-4" /></Button>
@@ -103,13 +107,13 @@ function ItemModal({ modal, categories, onClose }) {
   if (form === null) {
     if (editing && !it) return <Modal open onClose={onClose} title="Loading…"><Skeleton className="h-40" /></Modal>;
     setForm(editing ? {
-      name: it.name, price: it.price, categoryId: it.category_id || '', taxRate: it.tax_rate,
+      name: it.name, price: it.price, costPrice: it.cost_price ?? 0, categoryId: it.category_id || '', taxRate: it.tax_rate,
       foodType: it.food_type, spicyLevel: it.spicy_level, prepTimeMins: it.prep_time_mins,
       description: it.description || '', isRecommended: it.is_recommended, isBestseller: it.is_bestseller,
       variants: (it.variants || []).map((v) => ({ name: v.name, priceDelta: Number(v.price_delta), isDefault: v.is_default })),
       addonGroups: (it.addonGroups || []).map((g) => ({ name: g.name, minSelect: g.min_select, maxSelect: g.max_select, isRequired: g.is_required, options: g.options.map((o) => ({ name: o.name, price: Number(o.price) })) })),
     } : {
-      name: '', price: '', categoryId: categories[0]?.id || '', taxRate: 5, foodType: 'VEG', spicyLevel: 0, prepTimeMins: 15,
+      name: '', price: '', costPrice: '', categoryId: categories[0]?.id || '', taxRate: 5, foodType: 'VEG', spicyLevel: 0, prepTimeMins: 15,
       description: '', isRecommended: false, isBestseller: false, variants: [], addonGroups: [],
     });
     return null;
@@ -119,7 +123,7 @@ function ItemModal({ modal, categories, onClose }) {
   const mutation = useMutation({
     mutationFn: () => {
       const payload = {
-        name: form.name, price: Number(form.price), categoryId: form.categoryId || undefined,
+        name: form.name, price: Number(form.price), costPrice: Number(form.costPrice) || 0, categoryId: form.categoryId || undefined,
         taxRate: Number(form.taxRate), foodType: form.foodType, spicyLevel: Number(form.spicyLevel),
         prepTimeMins: Number(form.prepTimeMins), description: form.description || undefined,
         isRecommended: form.isRecommended, isBestseller: form.isBestseller,
@@ -140,8 +144,15 @@ function ItemModal({ modal, categories, onClose }) {
       <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <Input label="Name" required value={form.name} onChange={set('name')} className="col-span-2" />
-          <Input label="Price (₹)" type="number" required value={form.price} onChange={set('price')} />
+          <Input label="Sell price (₹)" type="number" required value={form.price} onChange={set('price')} />
+          <Input label="Cost price (₹)" type="number" value={form.costPrice} onChange={set('costPrice')} placeholder="0" />
           <Input label="Tax %" type="number" value={form.taxRate} onChange={set('taxRate')} />
+          {Number(form.price) > 0 && Number(form.costPrice) > 0 && (
+            <div className="col-span-2 -mt-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400">
+              Margin: <b>₹{(Number(form.price) - Number(form.costPrice)).toFixed(2)}</b> per unit
+              {' '}({Math.round(((Number(form.price) - Number(form.costPrice)) / Number(form.price)) * 100)}%)
+            </div>
+          )}
           <Select label="Category" value={form.categoryId} onChange={set('categoryId')}>
             <option value="">Uncategorized</option>
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}

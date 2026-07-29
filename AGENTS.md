@@ -135,7 +135,7 @@ Each `modules/<feature>/` is a layered slice:
 <feature>.repository.js    # SQL only, parameterized, tenant-scoped
 ```
 Existing modules: `auth, tenants, staff, categories, menu, tables, coupons, orders, billing,
-public, notifications, audit, analytics, uploads`.
+public, notifications, audit, analytics, finance, uploads`.
 
 **Conventions (follow exactly):**
 - **Money is computed server-side** from the DB catalog (never trust client prices). See
@@ -182,6 +182,10 @@ Migrations `server/src/db/migrations/0001..0006`. Key tables & relations:
   JSONB, print_count) · **tenant_counters** (race-safe per-tenant sequence for order/invoice #)
 - **notifications** (user_id OR target_role; is_read) · **audit_logs** (module, action, record_id,
   old/new_values JSONB, actor_*, ip/device/browser/os)
+- **expenses** (0007) — category, title, amount, vendor, payment_method, expense_date, note.
+  Plus **menu_items.cost_price** and **order_items.cost_snapshot** (unit cost captured at order
+  time). COGS = Σ(qty × `COALESCE(NULLIF(cost_snapshot,0), menu_items.cost_price, 0)`), so
+  historical orders fall back to the product's current cost. P&L = NetSales − COGS − Expenses.
 
 Enums are **TEXT + CHECK constraints** (not native enums) — add values by editing the CHECK in a
 new migration.
@@ -208,6 +212,7 @@ Auth cookies: `rs_access` (15m), `rs_refresh` (7d, rotating), `rs_csrf` (JS-read
 | **notifications** | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read` |
 | **audit-logs** | `GET /audit-logs`, `GET /audit-logs/facets`, `GET /audit-logs/export?format=csv|xlsx` |
 | **analytics** | `GET /analytics/dashboard`, `GET /analytics/reports/sales?format=csv|xlsx` |
+| **finance** | Expenses: `GET/POST /finance/expenses`, `PATCH/DELETE /finance/expenses/:id`, `GET /finance/expenses/export`. P&L: `GET /finance/pnl`, `GET /finance/pnl/trend`, `GET /finance/product-profit`, `GET /finance/product-profit/export`. Perms: `expense:view/manage`, `finance:view` |
 | **uploads** | `POST /uploads/signed-url`, `GET /uploads/status` |
 | **health** | `GET /health`, `GET /health/ready` |
 

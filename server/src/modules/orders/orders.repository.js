@@ -5,7 +5,7 @@ import { query } from '../../config/database.js';
 export async function getPricingItems({ tenantId, itemIds, q = query }) {
   if (!itemIds.length) return [];
   const { rows } = await q(
-    `SELECT id, name, price, tax_rate, prep_time_mins, is_available, is_out_of_stock
+    `SELECT id, name, price, cost_price, tax_rate, prep_time_mins, is_available, is_out_of_stock
        FROM menu_items
       WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND deleted_at IS NULL`,
     [tenantId, itemIds],
@@ -71,12 +71,12 @@ export async function insertOrderItem({ tenantId, orderId, line, q }) {
   const { rows } = await q(
     `INSERT INTO order_items
       (tenant_id, order_id, menu_item_id, variant_id, name_snapshot, variant_snapshot,
-       unit_price, quantity, addons_total, tax_rate, line_total, note)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+       unit_price, quantity, addons_total, tax_rate, cost_snapshot, line_total, note)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
     [
       tenantId, orderId, line.menuItemId, line.variantId || null, line.nameSnapshot,
       line.variantSnapshot || null, line.unitPrice, line.quantity, line.addonsTotal,
-      line.taxRate, line.lineTotal, line.note || null,
+      line.taxRate, line.costSnapshot || 0, line.lineTotal, line.note || null,
     ],
   );
   return rows[0].id;

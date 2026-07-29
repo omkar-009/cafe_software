@@ -2,7 +2,7 @@ import { query } from '../../config/database.js';
 import { buildUpdate, mapKeysToSnake } from '../../shared/sqlUpdate.js';
 
 const COLS = `id, tenant_id, role, full_name, email, phone, avatar_url,
-  is_active, permissions, last_login_at, created_at, updated_at`;
+  is_active, permissions, monthly_salary, last_login_at, created_at, updated_at`;
 
 export async function list({ tenantId, role, search, limit, offset }) {
   const where = ['tenant_id = $1', 'deleted_at IS NULL', "role <> 'CUSTOMER'"];
@@ -42,16 +42,16 @@ export async function emailExists({ tenantId, email, excludeId = null }) {
   return rows.length > 0;
 }
 
-export async function create({ tenantId, role, fullName, email, phone, passwordHash, permissions, actorId }) {
+export async function create({ tenantId, role, fullName, email, phone, passwordHash, permissions, monthlySalary, actorId }) {
   const { rows } = await query(
-    `INSERT INTO users (tenant_id, role, full_name, email, phone, password_hash, permissions, created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING ${COLS}`,
-    [tenantId, role, fullName, email, phone || null, passwordHash, permissions ? JSON.stringify(permissions) : null, actorId],
+    `INSERT INTO users (tenant_id, role, full_name, email, phone, password_hash, permissions, monthly_salary, created_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,COALESCE($8,0),$9) RETURNING ${COLS}`,
+    [tenantId, role, fullName, email, phone || null, passwordHash, permissions ? JSON.stringify(permissions) : null, monthlySalary, actorId],
   );
   return rows[0];
 }
 
-const UPDATABLE = ['full_name', 'phone', 'role', 'avatar_url', 'is_active', 'permissions'];
+const UPDATABLE = ['full_name', 'phone', 'role', 'avatar_url', 'is_active', 'permissions', 'monthly_salary'];
 
 export async function update({ tenantId, id, data, actorId }) {
   const payload = mapKeysToSnake(data);

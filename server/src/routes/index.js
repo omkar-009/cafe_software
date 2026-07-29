@@ -16,6 +16,7 @@ import publicRoutes from '../modules/public/public.routes.js';
 import notificationRoutes from '../modules/notifications/notifications.routes.js';
 import auditRoutes from '../modules/audit/audit.routes.js';
 import analyticsRoutes from '../modules/analytics/analytics.routes.js';
+import financeRoutes from '../modules/finance/finance.routes.js';
 import uploadRoutes from '../modules/uploads/uploads.routes.js';
 
 const router = Router();
@@ -41,6 +42,7 @@ router.use('/public', publicRoutes); // customer QR flow (no auth)
 router.use('/notifications', notificationRoutes);
 router.use('/audit-logs', auditRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/finance', financeRoutes);
 router.use('/uploads', uploadRoutes);
 
 export default router;

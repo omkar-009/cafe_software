@@ -5,6 +5,8 @@ import OrdersPage from './OrdersPage';
 import MenuPage from './MenuPage';
 import TablesPage from './TablesPage';
 import CouponsPage from './CouponsPage';
+import ExpensesPage from './ExpensesPage';
+import FinancePage from './FinancePage';
 import StaffPage from './StaffPage';
 import BrandingPage from './BrandingPage';
 import AuditPage from './AuditPage';
@@ -18,6 +20,8 @@ export default function AdminApp() {
         <Route path="menu" element={<MenuPage />} />
         <Route path="tables" element={<TablesPage />} />
         <Route path="coupons" element={<CouponsPage />} />
+        <Route path="expenses" element={<ExpensesPage />} />
+        <Route path="finance" element={<FinancePage />} />
         <Route path="staff" element={<StaffPage />} />
         <Route path="branding" element={<BrandingPage />} />
         <Route path="audit" element={<AuditPage />} />

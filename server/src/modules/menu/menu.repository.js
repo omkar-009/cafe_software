@@ -1,7 +1,7 @@
 import { query } from '../../config/database.js';
 import { buildUpdate, mapKeysToSnake } from '../../shared/sqlUpdate.js';
 
-const ITEM_COLS = `id, tenant_id, category_id, name, description, price, tax_rate, food_type,
+const ITEM_COLS = `id, tenant_id, category_id, name, description, price, cost_price, tax_rate, food_type,
   spicy_level, prep_time_mins, ingredients, calories, is_available, is_out_of_stock,
   is_recommended, is_bestseller, sort_order, created_at, updated_at`;
 
@@ -30,7 +30,7 @@ export async function list({ tenantId, categoryId, search, foodType, availableOn
   const total = await query(`SELECT count(*)::int AS total FROM menu_items m WHERE ${whereSql}`, params);
   const { rows } = await query(
     `SELECT m.id, m.tenant_id, m.category_id, c.name AS category_name, m.name, m.description,
-            m.price, m.tax_rate, m.food_type, m.spicy_level, m.prep_time_mins,
+            m.price, m.cost_price, m.tax_rate, m.food_type, m.spicy_level, m.prep_time_mins,
             m.is_available, m.is_out_of_stock, m.is_recommended, m.is_bestseller, m.sort_order,
             m.created_at,
             (SELECT url FROM menu_item_images i WHERE i.menu_item_id = m.id ORDER BY i.is_primary DESC, i.sort_order LIMIT 1) AS image_url
@@ -85,14 +85,14 @@ export async function findFullById({ tenantId, id }) {
 export async function insertItem({ tenantId, data, actorId, q }) {
   const { rows } = await q(
     `INSERT INTO menu_items
-      (tenant_id, category_id, name, description, price, tax_rate, food_type, spicy_level,
+      (tenant_id, category_id, name, description, price, cost_price, tax_rate, food_type, spicy_level,
        prep_time_mins, ingredients, calories, is_available, is_recommended, is_bestseller, sort_order, created_by)
-     VALUES ($1,$2,$3,$4,$5,COALESCE($6,0),COALESCE($7,'VEG'),COALESCE($8,0),
-             COALESCE($9,15),$10,$11,COALESCE($12,true),COALESCE($13,false),COALESCE($14,false),COALESCE($15,0),$16)
+     VALUES ($1,$2,$3,$4,$5,COALESCE($6,0),COALESCE($7,0),COALESCE($8,'VEG'),COALESCE($9,0),
+             COALESCE($10,15),$11,$12,COALESCE($13,true),COALESCE($14,false),COALESCE($15,false),COALESCE($16,0),$17)
      RETURNING ${ITEM_COLS}`,
     [
       tenantId, data.categoryId || null, data.name, data.description || null, data.price,
-      data.taxRate, data.foodType, data.spicyLevel, data.prepTimeMins,
+      data.costPrice, data.taxRate, data.foodType, data.spicyLevel, data.prepTimeMins,
       data.ingredients || null, data.calories || null, data.isAvailable,
       data.isRecommended, data.isBestseller, data.sortOrder, actorId,
     ],
@@ -146,7 +146,7 @@ export async function replaceAddonGroups({ tenantId, itemId, addonGroups, q }) {
 }
 
 const UPDATABLE = [
-  'category_id', 'name', 'description', 'price', 'tax_rate', 'food_type', 'spicy_level',
+  'category_id', 'name', 'description', 'price', 'cost_price', 'tax_rate', 'food_type', 'spicy_level',
   'prep_time_mins', 'ingredients', 'calories', 'is_available', 'is_out_of_stock',
   'is_recommended', 'is_bestseller', 'sort_order',
 ];
