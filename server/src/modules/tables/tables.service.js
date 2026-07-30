@@ -1,7 +1,6 @@
 import QRCode from 'qrcode';
 import ApiError from '../../shared/ApiError.js';
 import env from '../../config/env.js';
-import { signQrPayload } from '../../shared/security.js';
 import { AUDIT_MODULE } from '../../shared/constants.js';
 import { auditFromRequest } from '../audit/audit.service.js';
 import * as repo from './tables.repository.js';
@@ -66,20 +65,16 @@ export async function deleteTable(req) {
 }
 
 /**
- * Build the customer-facing QR URL for a table: a signed, tamper-evident deep
- * link into the ordering web app.
+ * Build the customer-facing QR URL for a table.
+ *
+ * Uses the table's short, unguessable `qr_token` directly (e.g.
+ * `.../order?d=Ab3xK9qM`) — a compact, readable link. The token is a random
+ * bearer credential; regenerating it rotates the code and invalidates old ones.
+ * (The older signed-payload links still resolve for backward compatibility.)
  */
 export function buildQrUrl(table) {
-  const payload = signQrPayload({
-    tenantId: table.tenant_id,
-    floorId: table.floor_id,
-    tableId: table.id,
-    qrToken: table.qr_token,
-    qrVersion: table.qr_version,
-  });
-  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
   // PUBLIC_URL wins so QR codes point at a phone-reachable host (LAN IP / domain).
-  return `${env.PUBLIC_URL || env.CLIENT_URL}/order?d=${encoded}`;
+  return `${env.PUBLIC_URL || env.CLIENT_URL}/order?d=${table.qr_token}`;
 }
 
 /** Return the QR as a PNG data URL plus the encoded deep link. */

@@ -21,15 +21,35 @@ function decodePayload(encoded) {
   return payload;
 }
 
-async function resolveContext(encoded) {
-  const payload = decodePayload(encoded);
-  const table = await tablesRepo.findByQrToken(payload.k);
-  if (!table || table.id !== payload.b || table.tenant_id !== payload.t) {
-    throw ApiError.notFound('Table not found for this QR code');
+/**
+ * Resolve a QR reference to its table. The reference is EITHER a short table
+ * code (the table's `qr_token`, used in modern short links) OR a legacy signed
+ * base64 payload. We try the direct code first, then fall back to decoding the
+ * signed payload, so old printed QR codes keep working.
+ */
+async function resolveContext(ref) {
+  if (!ref) throw ApiError.badRequest('Missing QR code');
+
+  // 1) Short code path — ref is the table's qr_token.
+  let table = await tablesRepo.findByQrToken(ref);
+
+  // 2) Legacy signed payload path.
+  if (!table) {
+    let payload;
+    try {
+      payload = decodePayload(ref);
+    } catch {
+      throw ApiError.notFound('Invalid or expired QR code — please scan the code on your table');
+    }
+    table = await tablesRepo.findByQrToken(payload.k);
+    if (!table || table.id !== payload.b || table.tenant_id !== payload.t) {
+      throw ApiError.notFound('Table not found for this QR code');
+    }
+    if (table.qr_version !== payload.v) {
+      throw ApiError.badRequest('This QR code has expired — please scan the latest code on your table');
+    }
   }
-  if (table.qr_version !== payload.v) {
-    throw ApiError.badRequest('This QR code has expired — please scan the latest code on your table');
-  }
+
   const tenant = await tenantsRepo.findById(table.tenant_id);
   if (!tenant) throw ApiError.notFound('Restaurant not found');
   if (![TENANT_STATUS.ACTIVE, TENANT_STATUS.TRIAL].includes(tenant.status)) {

@@ -47,7 +47,13 @@ export default function App() {
 
   useEffect(() => { bootstrap(); }, [bootstrap]);
   useEffect(() => {
-    const onLogout = () => navigate('/login');
+    // Redirect to /login only for STAFF routes. Customers on the public QR
+    // ordering routes are never sent to login — they order without an account.
+    const onLogout = () => {
+      const path = window.location.pathname;
+      const isPublic = path === '/login' || path.startsWith('/order') || path.startsWith('/o/');
+      if (!isPublic) navigate('/login');
+    };
     window.addEventListener('auth:logout', onLogout);
     return () => window.removeEventListener('auth:logout', onLogout);
   }, [navigate]);
