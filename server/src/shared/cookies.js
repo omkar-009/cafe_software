@@ -12,9 +12,11 @@ export const CSRF_COOKIE = 'rs_csrf';
 function baseOptions() {
   return {
     httpOnly: true,
-    secure: env.COOKIE_SECURE || isProd,
+    // SameSite=None (cross-site cookies) REQUIRES Secure — force it on.
+    secure: env.COOKIE_SECURE || isProd || env.COOKIE_SAME_SITE === 'none',
     sameSite: env.COOKIE_SAME_SITE,
-    domain: env.COOKIE_DOMAIN === 'localhost' ? undefined : env.COOKIE_DOMAIN,
+    // Empty / localhost → host-only cookie (correct for a single API domain).
+    domain: !env.COOKIE_DOMAIN || env.COOKIE_DOMAIN === 'localhost' ? undefined : env.COOKIE_DOMAIN,
     path: '/',
   };
 }

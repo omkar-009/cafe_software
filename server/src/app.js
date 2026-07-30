@@ -9,6 +9,8 @@ import cors from 'cors';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import env, { isDev } from './config/env.js';
 import logger from './config/logger.js';
@@ -37,10 +39,21 @@ export function createApp() {
 
   // CORS — allow-list in production; in development reflect any origin so the
   // app works when opened from a phone/tablet on the LAN (QR testing) or a LAN IP.
+  // CORS_ORIGINS entries may include `*` wildcards, e.g. `https://*.vercel.app`
+  // to cover Vercel preview deployments.
+  const originAllowed = (origin) =>
+    env.CORS_ORIGINS.some((o) => {
+      if (o === origin) return true;
+      if (o.includes('*')) {
+        const re = new RegExp(`^${o.replace(/[.]/g, '\\.').replace(/\*/g, '[^.]*')}$`);
+        return re.test(origin);
+      }
+      return false;
+    });
   app.use(
     cors({
       origin(origin, cb) {
-        if (!origin || isDev || env.CORS_ORIGINS.includes(origin)) return cb(null, true);
+        if (!origin || isDev || originAllowed(origin)) return cb(null, true);
         // Allow private-LAN origins (192.168.x, 10.x, 172.16–31.x) for on-site devices.
         if (/^https?:\/\/(?:localhost|127\.0\.0\.1|10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(origin)) {
           return cb(null, true);
@@ -72,6 +85,18 @@ export function createApp() {
 
   // Versioned API with global rate limit + CSRF
   app.use(env.API_PREFIX, globalLimiter, csrfProtection, apiRouter);
+
+  // Optional single-origin deploy: serve the built SPA from this server so the
+  // frontend and API share one domain (no cross-site cookie/CSRF concerns).
+  if (env.SERVE_CLIENT) {
+    const clientDist = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../client/dist');
+    app.use(express.static(clientDist, { index: false, maxAge: '1y' }));
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api') || req.path.startsWith('/socket.io') || req.path.startsWith('/health')) return next();
+      return res.sendFile(path.join(clientDist, 'index.html'));
+    });
+    logger.info(`🖥  Serving client from ${clientDist}`);
+  }
 
   // 404 + centralized error handling (must be last)
   app.use(notFound);

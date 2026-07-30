@@ -6,8 +6,11 @@ import * as tenantsRepo from '../tenants/tenants.repository.js';
 import * as menuRepo from '../menu/menu.repository.js';
 import * as categoriesRepo from '../categories/categories.repository.js';
 import * as couponsRepo from '../coupons/coupons.repository.js';
+import * as ordersRepo from '../orders/orders.repository.js';
 import { createOrder, trackOrder } from '../orders/orders.service.js';
 import { previewCoupon } from '../coupons/coupons.service.js';
+import { ensureInvoice } from '../billing/billing.service.js';
+import { renderInvoicePdf } from '../billing/billing.pdf.js';
 
 /** Decode + verify a QR deep-link payload, returning the resolved table context. */
 function decodePayload(encoded) {
@@ -135,4 +138,23 @@ export async function track({ encoded, orderId }) {
 export async function coupon({ encoded, code, subtotal }) {
   const { tenant } = await resolveContext(encoded);
   return previewCoupon({ tenantId: tenant.id, code, subtotal });
+}
+
+/**
+ * Guest-downloadable invoice PDF. Available once the order is served or paid.
+ * Tenant is derived from the QR reference and the order is verified to belong
+ * to that tenant, so a guest can only ever fetch their own table's bill.
+ */
+export async function invoicePdf({ encoded, orderId, client }) {
+  const { tenant } = await resolveContext(encoded);
+  const order = await ordersRepo.findFullById({ tenantId: tenant.id, id: orderId });
+  if (!order) throw ApiError.notFound('Order not found');
+  const billable = order.payment_status === 'PAID' || ['SERVED', 'COMPLETED'].includes(order.status);
+  if (!billable) throw ApiError.badRequest('Your invoice will be available once the order is served.');
+
+  const invoice = await ensureInvoice({
+    tenantId: tenant.id, orderId, actor: { role: 'CUSTOMER', name: order.customer_name || 'Guest' }, client,
+  });
+  const pdf = await renderInvoicePdf(invoice.snapshot);
+  return { invoice, pdf };
 }

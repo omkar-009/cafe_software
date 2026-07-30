@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { UtensilsCrossed, Store, Mail, Lock, Eye } from 'lucide-react';
+import { UtensilsCrossed, Store, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/store/auth';
 import { Button, Input } from '@/components/ui';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -69,17 +69,16 @@ export default function LoginPage() {
           </div>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3 top-[38px] h-4 w-4 text-zinc-400" />
-            <Input label="Password" type="password" required placeholder="Enter your password"
-              value={form.password} onChange={set('password')} className="pl-9" autoComplete="current-password" />
-            <Button
-              size="icon"
-              variant="ghost"
+            <Input label="Password" type={showPassword ? 'text' : 'password'} required placeholder="Enter your password"
+              value={form.password} onChange={set('password')} className="pl-9 pr-10" autoComplete="current-password" />
+            <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400"
-              onClick={() => setShowPassword((s) => !s)}
+              onClick={toggleShowPassword}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              className="absolute right-2 top-[34px] rounded-md p-1 text-zinc-400 transition hover:text-zinc-600 dark:hover:text-zinc-200"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
+            </button>
           </div>
 
           <Button type="submit" size="lg" loading={loading} className="w-full">Sign In</Button>

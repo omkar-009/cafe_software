@@ -24,6 +24,8 @@ const schema = z.object({
   // testing (e.g. http://192.168.1.5:5173) or your domain in production.
   // Falls back to CLIENT_URL when unset.
   PUBLIC_URL: z.string().url().optional(),
+  // Serve the built client (client/dist) from this server → single-origin deploy.
+  SERVE_CLIENT: bool(false),
   SERVER_URL: z.string().url().default('http://localhost:4000'),
   CORS_ORIGINS: z
     .string()

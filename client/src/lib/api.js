@@ -7,6 +7,15 @@ export function getCookie(name) {
   return match ? decodeURIComponent(match[2]) : null;
 }
 
+// CSRF token. Cross-origin deploys can't read the backend's cookie from JS, so
+// the server returns the token in auth responses and we persist it here.
+const CSRF_KEY = 'rs_csrf';
+export const setCsrfToken = (t) => { if (t) { try { localStorage.setItem(CSRF_KEY, t); } catch { /* ignore */ } } };
+const getCsrfToken = () => {
+  try { return localStorage.getItem(CSRF_KEY) || getCookie('rs_csrf'); }
+  catch { return getCookie('rs_csrf'); }
+};
+
 export const api = axios.create({
   baseURL: API_BASE,
   withCredentials: true,
@@ -17,7 +26,7 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   const method = (config.method || 'get').toUpperCase();
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
-    const csrf = getCookie('rs_csrf');
+    const csrf = getCsrfToken();
     if (csrf) config.headers['X-CSRF-Token'] = csrf;
   }
   // For file uploads, drop the JSON Content-Type so the browser sets the correct
@@ -36,7 +45,12 @@ const NO_REFRESH = ['/auth/refresh', '/auth/login', '/auth/logout'];
 // Transparent access-token refresh on 401 (single retry), then bubble up.
 let refreshing = null;
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    // Persist the CSRF token whenever an auth endpoint returns it.
+    const t = res?.data?.data?.csrfToken;
+    if (t) setCsrfToken(t);
+    return res;
+  },
   async (error) => {
     const { config, response } = error;
     const skip = NO_REFRESH.some((p) => config?.url?.includes(p));
