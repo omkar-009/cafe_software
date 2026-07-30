@@ -13,6 +13,7 @@ import { Button, Badge, EmptyState, Spinner } from '@/components/ui';
 import ThemeToggle from '@/components/ThemeToggle';
 import DateFilter from '@/components/DateFilter';
 import ProfileModal from '@/components/ProfileModal';
+import CheckInOutButton from '@/components/CheckInOutButton';
 import NotificationBell from '@/components/admin/NotificationBell';
 
 const TABS = [
@@ -77,6 +78,7 @@ export default function WaiterPanel() {
           <div><h1 className="font-extrabold leading-none">Waiter</h1><p className="text-xs text-zinc-500">{user?.fullName}</p></div>
         </div>
         <div className="flex items-center gap-2">
+          <CheckInOutButton />
           <DateFilter value={preset} onChange={setPreset} custom={custom} onCustomChange={setCustom} />
           <NotificationBell />
           <Button variant="ghost" size="icon" onClick={() => setProfile(true)}><User className="h-5 w-5" /></Button>

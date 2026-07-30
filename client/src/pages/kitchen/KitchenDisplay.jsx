@@ -10,6 +10,7 @@ import { useSocketEvents, playBeep } from '@/hooks/useSocketEvents';
 import { rangeFor } from '@/lib/dateRange';
 import { Button, EmptyState, Spinner, Badge } from '@/components/ui';
 import ThemeToggle from '@/components/ThemeToggle';
+import CheckInOutButton from '@/components/CheckInOutButton';
 import DateFilter from '@/components/DateFilter';
 import ProfileModal from '@/components/ProfileModal';
 
@@ -87,6 +88,7 @@ export default function KitchenDisplay() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <CheckInOutButton />
           <DateFilter value={preset} onChange={setPreset} custom={custom} onCustomChange={setCustom}
             extraOptions={[{ key: 'live', label: 'Live queue' }]} />
           <Button variant="ghost" size="icon" onClick={() => setSortByPriority((v) => !v)} title="Sort by priority"

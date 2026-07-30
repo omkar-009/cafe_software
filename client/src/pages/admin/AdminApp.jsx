@@ -8,6 +8,7 @@ import CouponsPage from './CouponsPage';
 import ExpensesPage from './ExpensesPage';
 import FinancePage from './FinancePage';
 import StaffPage from './StaffPage';
+import AttendancePage from './AttendancePage';
 import BrandingPage from './BrandingPage';
 import AuditPage from './AuditPage';
 
@@ -23,6 +24,7 @@ export default function AdminApp() {
         <Route path="expenses" element={<ExpensesPage />} />
         <Route path="finance" element={<FinancePage />} />
         <Route path="staff" element={<StaffPage />} />
+        <Route path="attendance" element={<AttendancePage />} />
         <Route path="branding" element={<BrandingPage />} />
         <Route path="audit" element={<AuditPage />} />
       </Routes>

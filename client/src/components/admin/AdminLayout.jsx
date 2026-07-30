@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, UtensilsCrossed, LayoutGrid, Users, Ticket, ReceiptText,
-  Palette, ScrollText, Menu as MenuIcon, X, LogOut, Store, Wallet, TrendingUp,
+  Palette, ScrollText, Menu as MenuIcon, X, LogOut, Store, Wallet, TrendingUp, CalendarCheck,
 } from 'lucide-react';
 import { useAuth } from '@/store/auth';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -18,6 +18,7 @@ const NAV = [
   { to: '/admin/expenses', label: 'Expenses', icon: Wallet },
   { to: '/admin/finance', label: 'Profit & Loss', icon: TrendingUp },
   { to: '/admin/staff', label: 'Staff', icon: Users },
+  { to: '/admin/attendance', label: 'Attendance', icon: CalendarCheck },
   { to: '/admin/branding', label: 'Branding', icon: Palette },
   { to: '/admin/audit', label: 'Audit Logs', icon: ScrollText },
 ];

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, UtensilsCrossed, Tags, X } from 'lucide-react';
@@ -96,28 +96,33 @@ function Toggle({ label, checked, onChange }) {
   );
 }
 
+/** Map an API item onto the flat form shape the modal edits. */
+function formFromItem(it) {
+  return {
+    name: it.name, price: it.price, costPrice: it.cost_price ?? 0, categoryId: it.category_id || '', taxRate: it.tax_rate,
+    foodType: it.food_type, spicyLevel: it.spicy_level, prepTimeMins: it.prep_time_mins,
+    description: it.description || '', isRecommended: it.is_recommended, isBestseller: it.is_bestseller,
+    variants: (it.variants || []).map((v) => ({ name: v.name, priceDelta: Number(v.price_delta), isDefault: v.is_default })),
+    addonGroups: (it.addonGroups || []).map((g) => ({ name: g.name, minSelect: g.min_select, maxSelect: g.max_select, isRequired: g.is_required, options: (g.options || []).map((o) => ({ name: o.name, price: Number(o.price) })) })),
+  };
+}
+function blankForm(categories) {
+  return {
+    name: '', price: '', costPrice: '', categoryId: categories[0]?.id || '', taxRate: 5, foodType: 'VEG', spicyLevel: 0, prepTimeMins: 15,
+    description: '', isRecommended: false, isBestseller: false, variants: [], addonGroups: [],
+  };
+}
+
 function ItemModal({ modal, categories, onClose }) {
   const qc = useQueryClient();
   const editing = modal.mode === 'edit';
-  const { data } = useQuery({ queryKey: ['menu-item', modal.id], queryFn: () => request(api.get(`/menu/${modal.id}`)), enabled: editing });
+  const { data, error, isError } = useQuery({ queryKey: ['menu-item', modal.id], queryFn: () => request(api.get(`/menu/${modal.id}`)), enabled: editing });
   const it = data?.item;
 
-  const [form, setForm] = useState(null);
-  // initialize once data ready (or immediately for create)
-  if (form === null) {
-    if (editing && !it) return <Modal open onClose={onClose} title="Loading…"><Skeleton className="h-40" /></Modal>;
-    setForm(editing ? {
-      name: it.name, price: it.price, costPrice: it.cost_price ?? 0, categoryId: it.category_id || '', taxRate: it.tax_rate,
-      foodType: it.food_type, spicyLevel: it.spicy_level, prepTimeMins: it.prep_time_mins,
-      description: it.description || '', isRecommended: it.is_recommended, isBestseller: it.is_bestseller,
-      variants: (it.variants || []).map((v) => ({ name: v.name, priceDelta: Number(v.price_delta), isDefault: v.is_default })),
-      addonGroups: (it.addonGroups || []).map((g) => ({ name: g.name, minSelect: g.min_select, maxSelect: g.max_select, isRequired: g.is_required, options: g.options.map((o) => ({ name: o.name, price: Number(o.price) })) })),
-    } : {
-      name: '', price: '', costPrice: '', categoryId: categories[0]?.id || '', taxRate: 5, foodType: 'VEG', spicyLevel: 0, prepTimeMins: 15,
-      description: '', isRecommended: false, isBestseller: false, variants: [], addonGroups: [],
-    });
-    return null;
-  }
+  // null while an edit's item is still loading; every hook below must still run.
+  const [form, setForm] = useState(() => (editing ? null : blankForm(categories)));
+  useEffect(() => { if (it) setForm(formFromItem(it)); }, [it]);
+
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target?.type === 'checkbox' ? e.target.checked : e.target.value }));
 
   const mutation = useMutation({
@@ -138,6 +143,17 @@ function ItemModal({ modal, categories, onClose }) {
 
   const addVariant = () => setForm((f) => ({ ...f, variants: [...f.variants, { name: '', priceDelta: 0, isDefault: f.variants.length === 0 }] }));
   const addGroup = () => setForm((f) => ({ ...f, addonGroups: [...f.addonGroups, { name: '', minSelect: 0, maxSelect: 1, isRequired: false, options: [] }] }));
+
+  // Safe: every hook above has already run, so these returns can't change hook order.
+  if (isError) {
+    return (
+      <Modal open onClose={onClose} title="Couldn't load item">
+        <p className="text-sm text-zinc-500">{error?.message || 'Something went wrong.'}</p>
+        <div className="mt-4 flex justify-end"><Button variant="ghost" onClick={onClose}>Close</Button></div>
+      </Modal>
+    );
+  }
+  if (!form) return <Modal open onClose={onClose} title="Loading…"><Skeleton className="h-40" /></Modal>;
 
   return (
     <Modal open onClose={onClose} title={editing ? 'Edit item' : 'Add item'} className="max-h-[88vh] overflow-y-auto max-w-2xl">

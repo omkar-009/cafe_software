@@ -17,6 +17,7 @@ import notificationRoutes from '../modules/notifications/notifications.routes.js
 import auditRoutes from '../modules/audit/audit.routes.js';
 import analyticsRoutes from '../modules/analytics/analytics.routes.js';
 import financeRoutes from '../modules/finance/finance.routes.js';
+import attendanceRoutes from '../modules/attendance/attendance.routes.js';
 import uploadRoutes from '../modules/uploads/uploads.routes.js';
 
 const router = Router();
@@ -43,6 +44,7 @@ router.use('/notifications', notificationRoutes);
 router.use('/audit-logs', auditRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/finance', financeRoutes);
+router.use('/attendance', attendanceRoutes);
 router.use('/uploads', uploadRoutes);
 
 export default router;

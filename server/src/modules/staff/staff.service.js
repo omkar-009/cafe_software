@@ -24,7 +24,7 @@ export async function getStaff({ tenantId, id }) {
 }
 
 export async function createStaff(req) {
-  const { role, fullName, email, phone, password, permissions } = req.body;
+  const { role, fullName, email, phone, password, permissions, monthlySalary } = req.body;
   assertAssignableRole(role);
 
   if (await repo.emailExists({ tenantId: req.tenantId, email })) {
@@ -39,6 +39,7 @@ export async function createStaff(req) {
     phone,
     passwordHash,
     permissions,
+    monthlySalary,
     actorId: req.user.id,
   });
 

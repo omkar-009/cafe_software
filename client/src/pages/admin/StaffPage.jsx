@@ -59,15 +59,17 @@ function StaffModal({ modal, onClose }) {
   const { mode, staff } = modal;
   const [form, setForm] = useState(
     mode === 'password' ? { password: '' }
-      : { role: staff?.role || 'WAITER', fullName: staff?.full_name || '', email: staff?.email || '', phone: staff?.phone || '', password: '', isActive: staff?.is_active ?? true },
+      : { role: staff?.role || 'WAITER', fullName: staff?.full_name || '', email: staff?.email || '', phone: staff?.phone || '', password: '', monthlySalary: staff?.monthly_salary ?? '', isActive: staff?.is_active ?? true },
   );
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target?.type === 'checkbox' ? e.target.checked : e.target.value }));
 
   const mutation = useMutation({
     mutationFn: () => {
-      if (mode === 'create') return request(api.post('/staff', form));
       if (mode === 'password') return request(api.post(`/staff/${staff.id}/reset-password`, { password: form.password }));
-      const { email, password, ...rest } = form; return request(api.patch(`/staff/${staff.id}`, rest));
+      const salary = form.monthlySalary === '' ? undefined : Number(form.monthlySalary);
+      if (mode === 'create') return request(api.post('/staff', { ...form, monthlySalary: salary }));
+      const { email, password, monthlySalary, ...rest } = form;
+      return request(api.patch(`/staff/${staff.id}`, { ...rest, monthlySalary: salary }));
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['staff'] }); toast.success('Saved'); onClose(); },
     onError: (e) => toast.error(e.message),
@@ -93,6 +95,7 @@ function StaffModal({ modal, onClose }) {
               <Input label="Password" type="password" required minLength={8} value={form.password} onChange={set('password')} />
             </>}
             <Input label="Phone" value={form.phone} onChange={set('phone')} />
+            <Input label="Monthly salary (₹)" type="number" value={form.monthlySalary} onChange={set('monthlySalary')} placeholder="for payroll (optional)" />
             {mode === 'edit' && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isActive} onChange={set('isActive')} /> Active</label>}
           </>
         )}

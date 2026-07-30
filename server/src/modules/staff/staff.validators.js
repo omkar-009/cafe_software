@@ -10,6 +10,7 @@ export const createStaffSchema = z.object({
   phone: z.string().max(20).optional(),
   password: z.string().min(8).max(72),
   permissions: z.array(z.string()).optional(),
+  monthlySalary: z.number().min(0).optional(),
 });
 
 export const updateStaffSchema = z.object({
@@ -19,6 +20,7 @@ export const updateStaffSchema = z.object({
   avatarUrl: z.string().url().optional(),
   isActive: z.boolean().optional(),
   permissions: z.array(z.string()).optional(),
+  monthlySalary: z.number().min(0).optional(),
 });
 
 export const resetPasswordSchema = z.object({ password: z.string().min(8).max(72) });
