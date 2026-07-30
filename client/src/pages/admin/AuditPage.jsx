@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { fmtDateTime } from '@/lib/format';
 import { ScrollText, Download, Search } from 'lucide-react';
-import api, { request } from '@/lib/api';
+import api, { request, apiUrl } from '@/lib/api';
 import { Card, Button, Select, Badge, EmptyState, Skeleton } from '@/components/ui';
 
 export default function AuditPage() {
@@ -20,7 +20,7 @@ export default function AuditPage() {
   const logs = data?.logs || [];
 
   const set = (k) => (e) => setFilters((f) => ({ ...f, [k]: e.target.value }));
-  const exportUrl = (format) => { const p = new URLSearchParams(qs); p.set('format', format); window.open(`/api/v1/audit-logs/export?${p}`, '_blank'); };
+  const exportUrl = (format) => { const p = new URLSearchParams(qs); p.set('format', format); window.open(apiUrl(`/api/v1/audit-logs/export?${p}`), '_blank'); };
 
   return (
     <div>

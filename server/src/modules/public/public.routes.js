@@ -58,13 +58,18 @@ router.get(
 /** Download the invoice PDF (guest) once the order is served/paid. */
 router.get(
   '/orders/:orderId/invoice.pdf',
-  validate({ params: z.object({ orderId: z.string().uuid() }), query: z.object({ d: encoded }) }),
+  validate({
+    params: z.object({ orderId: z.string().uuid() }),
+    query: z.object({ d: encoded, download: z.string().optional() }),
+  }),
   catchAsync(async (req, res) => {
     const { invoice, pdf } = await service.invoicePdf({
       encoded: req.query.d, orderId: req.params.orderId, client: req.clientCtx,
     });
+    // download=1 → force save; otherwise open inline in the browser (view).
+    const disposition = req.query.download ? 'attachment' : 'inline';
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${invoice.invoice_number}.pdf"`);
+    res.setHeader('Content-Disposition', `${disposition}; filename="${invoice.invoice_number}.pdf"`);
     res.setHeader('Content-Length', pdf.length);
     return res.send(pdf);
   }),

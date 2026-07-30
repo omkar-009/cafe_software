@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 import { fmtTime } from '@/lib/format';
 import { CalendarCheck, Download, Wallet, Clock } from 'lucide-react';
-import api, { request } from '@/lib/api';
+import api, { request, apiUrl } from '@/lib/api';
 import { money } from '@/lib/cn';
 import { Card, Button, Select, Badge, EmptyState, Skeleton } from '@/components/ui';
 import StatCard from '@/components/admin/StatCard';
@@ -106,7 +106,7 @@ function Summary() {
   });
 
   const staff = data?.staff || [];
-  const exportUrl = (fmt) => window.open(`/api/v1/attendance/summary/export?month=${month}&format=${fmt}`, '_blank');
+  const exportUrl = (fmt) => window.open(apiUrl(`/api/v1/attendance/summary/export?month=${month}&format=${fmt}`), '_blank');
 
   return (
     <div>

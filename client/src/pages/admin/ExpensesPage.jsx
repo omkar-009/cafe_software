@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 import { Plus, Pencil, Trash2, Wallet, Download, Search } from 'lucide-react';
-import api, { request } from '@/lib/api';
+import api, { request, apiUrl } from '@/lib/api';
 import { money } from '@/lib/cn';
 import { rangeFor } from '@/lib/dateRange';
 import { Card, Button, Input, Select, Textarea, Modal, Badge, EmptyState, Skeleton } from '@/components/ui';
@@ -43,7 +43,7 @@ export default function ExpensesPage() {
 
   const expenses = data?.expenses || [];
   const total = data?.totalAmount || 0;
-  const exportUrl = (fmt) => { const p = new URLSearchParams({ from, to, format: fmt }); if (category) p.set('category', category); window.open(`/api/v1/finance/expenses/export?${p}`, '_blank'); };
+  const exportUrl = (fmt) => { const p = new URLSearchParams({ from, to, format: fmt }); if (category) p.set('category', category); window.open(apiUrl(`/api/v1/finance/expenses/export?${p}`), '_blank'); };
 
   return (
     <div>

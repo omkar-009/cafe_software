@@ -8,7 +8,7 @@ import dayjs from 'dayjs';
 import {
   IndianRupee, ShoppingBag, Ban, Timer, Users, TrendingUp, Download,
 } from 'lucide-react';
-import api, { request } from '@/lib/api';
+import api, { request, apiUrl } from '@/lib/api';
 import { money } from '@/lib/cn';
 import { useChartTokens } from '@/lib/chartTheme';
 import { Card, Skeleton, EmptyState, Button } from '@/components/ui';
@@ -33,7 +33,7 @@ export default function DashboardPage() {
     { name: 'New', value: data.customers.new },
   ];
 
-  const exportSales = () => window.open('/api/v1/analytics/reports/sales?format=xlsx', '_blank');
+  const exportSales = () => window.open(apiUrl('/api/v1/analytics/reports/sales?format=xlsx'), '_blank');
 
   return (
     <div className="space-y-6">

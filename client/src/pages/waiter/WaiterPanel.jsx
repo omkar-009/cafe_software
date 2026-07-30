@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import {
   Users, LogOut, Utensils, CreditCard, Download, Clock, User, IndianRupee, CircleDollarSign, CheckCircle2,
 } from 'lucide-react';
-import api, { request } from '@/lib/api';
+import api, { request, apiUrl } from '@/lib/api';
 import { money } from '@/lib/cn';
 import { useAuth } from '@/store/auth';
 import { useSocketEvents, playBeep } from '@/hooks/useSocketEvents';
@@ -134,7 +134,7 @@ export default function WaiterPanel() {
                     <Badge tone={o.payment_status === 'PAID' ? 'green' : 'gray'}>{o.payment_status}</Badge>
                     {o.status === 'READY' && <Button size="sm" onClick={() => serve.mutate(o.id)} disabled={serve.isPending}><Utensils className="h-4 w-4" /> Serve</Button>}
                     {o.status === 'SERVED' && o.payment_status !== 'PAID' && <Button size="sm" onClick={() => pay.mutate(o.id)} disabled={pay.isPending}><CreditCard className="h-4 w-4" /> Payment</Button>}
-                    <Button variant="outline" size="icon" onClick={() => window.open(`/api/v1/billing/orders/${o.id}/invoice.pdf`, '_blank')}><Download className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={() => window.open(apiUrl(`/api/v1/billing/orders/${o.id}/invoice.pdf`), '_blank')}><Download className="h-4 w-4" /></Button>
                   </div>
                 </div>
               ))}

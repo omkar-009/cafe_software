@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   TrendingUp, TrendingDown, IndianRupee, Package, Wallet, Download, PieChart, Trophy,
 } from 'lucide-react';
-import api, { request } from '@/lib/api';
+import api, { request, apiUrl } from '@/lib/api';
 import { money } from '@/lib/cn';
 import { rangeFor } from '@/lib/dateRange';
 import { Card, Button, EmptyState, Skeleton } from '@/components/ui';
@@ -27,7 +27,7 @@ export default function FinancePage() {
 
   const p = pnlData?.pnl;
   const products = (prodData?.products || []).slice().sort((a, b) => b.profit - a.profit);
-  const exportProfit = (fmt) => window.open(`/api/v1/finance/product-profit/export?${qs}&format=${fmt}`, '_blank');
+  const exportProfit = (fmt) => window.open(apiUrl(`/api/v1/finance/product-profit/export?${qs}&format=${fmt}`), '_blank');
 
   return (
     <div className="space-y-6">

@@ -10,6 +10,7 @@ export const useOrderHistory = create(
   persist(
     (set, get) => ({
       orders: [], // { orderId, orderNumber, tenantSlug, tenantName, d, placedAt }
+      profile: {}, // { name, phone } — remembered so returning guests are prefilled
 
       add: (o) =>
         set((s) => ({
@@ -18,6 +19,9 @@ export const useOrderHistory = create(
             ...s.orders.filter((x) => x.orderId !== o.orderId),
           ].slice(0, 50),
         })),
+
+      setProfile: (p) =>
+        set((s) => ({ profile: { ...s.profile, ...p } })),
 
       forTenant: (slug) => get().orders.filter((o) => o.tenantSlug === slug),
 

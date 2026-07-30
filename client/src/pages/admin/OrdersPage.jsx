@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 import { fmtDateTime } from '@/lib/format';
 import { ReceiptText, Download, CreditCard, Pencil, Trash2, Minus, Plus, Save } from 'lucide-react';
-import api, { request } from '@/lib/api';
+import api, { request, apiUrl } from '@/lib/api';
 import { money } from '@/lib/cn';
 import { rangeFor } from '@/lib/dateRange';
 import { useSocketEvents } from '@/hooks/useSocketEvents';
@@ -50,7 +50,7 @@ export default function OrdersPage() {
           <Button variant="outline" size="sm" onClick={() => {
             const p = new URLSearchParams({ from: range.from, to: range.to, format: 'xlsx' });
             if (status) p.set('status', status);
-            window.open(`/api/v1/orders/export?${p}`, '_blank');
+            window.open(apiUrl(`/api/v1/orders/export?${p}`), '_blank');
           }}><Download className="h-4 w-4" /> Export</Button>
         </div>
       </div>
@@ -120,7 +120,7 @@ function OrderDetail({ id, onClose }) {
     onError: (e) => toast.error(e.message),
   });
 
-  const invoice = () => window.open(`/api/v1/billing/orders/${id}/invoice.pdf`, '_blank');
+  const invoice = () => window.open(apiUrl(`/api/v1/billing/orders/${id}/invoice.pdf`), '_blank');
   const setQty = (itemId, q) => setDraft((d) => ({ ...d, qtys: { ...d.qtys, [itemId]: Math.max(1, q) } }));
   const toggleRemove = (itemId) => setDraft((d) => { const r = new Set(d.removed); r.has(itemId) ? r.delete(itemId) : r.add(itemId); return { ...d, removed: r }; });
 

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Check, ChefHat, Bell, Utensils, Clock, CheckCircle2, XCircle, ArrowLeft, Download } from 'lucide-react';
-import api, { request } from '@/lib/api';
+import { Check, ChefHat, Bell, Utensils, Clock, CheckCircle2, XCircle, ArrowLeft, Download, Eye } from 'lucide-react';
+import api, { request, apiUrl } from '@/lib/api';
 import { Button, Spinner, Badge } from '@/components/ui';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -36,7 +36,10 @@ export default function OrderTracking({ d, orderId, restaurant, onBack }) {
   const served = status === 'SERVED' || completed;
   const billable = paid || status === 'SERVED' || status === 'COMPLETED';
   const currentIdx = idxForStatus(status);
-  const invoiceUrl = `/api/v1/public/orders/${orderId}/invoice.pdf?d=${encodeURIComponent(d)}`;
+  // Absolute API URL so the PDF opens on the backend (not the static host, which
+  // would SPA-rewrite and bounce to /login). View = inline, download = attachment.
+  const invoiceView = apiUrl(`/api/v1/public/orders/${orderId}/invoice.pdf?d=${encodeURIComponent(d)}`);
+  const invoiceDownload = `${invoiceView}&download=1`;
 
   const headline = cancelled ? 'This order was cancelled'
     : completed ? 'All done — enjoy your meal! 🎉'
@@ -111,12 +114,18 @@ export default function OrderTracking({ d, orderId, restaurant, onBack }) {
           </div>
         </div>
 
-        {/* Invoice — available once served/paid */}
+        {/* Invoice — available once served/paid. View first, then download. */}
         {billable && (
-          <a href={invoiceUrl} target="_blank" rel="noreferrer"
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-3 font-semibold text-white shadow-glow transition hover:bg-brand-600">
-            <Download className="h-5 w-5" /> Download invoice
-          </a>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <a href={invoiceView} target="_blank" rel="noreferrer"
+              className="flex items-center justify-center gap-2 rounded-xl border border-brand-500 px-4 py-3 font-semibold text-brand-600 transition hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10">
+              <Eye className="h-5 w-5" /> View bill
+            </a>
+            <a href={invoiceDownload} target="_blank" rel="noreferrer"
+              className="flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-3 font-semibold text-white shadow-glow transition hover:bg-brand-600">
+              <Download className="h-5 w-5" /> Download
+            </a>
+          </div>
         )}
 
         <Button variant="outline" className="mt-3 w-full" onClick={onBack}>Order more items</Button>

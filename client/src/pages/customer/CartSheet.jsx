@@ -4,15 +4,18 @@ import toast from 'react-hot-toast';
 import { X, Trash2, Tag, Minus, Plus } from 'lucide-react';
 import api, { request } from '@/lib/api';
 import { useCart } from '@/store/cart';
+import { useOrderHistory } from '@/store/orders';
 import { Button } from '@/components/ui';
 
 export default function CartSheet({ open, onClose, d, restaurant, onPlaced }) {
   const { lines, setQty, remove, subtotal, toApiCart, clear } = useCart();
   const symbol = restaurant.currencySymbol || '₹';
+  const profile = useOrderHistory((s) => s.profile);
+  const setProfile = useOrderHistory((s) => s.setProfile);
   const [coupon, setCoupon] = useState('');
   const [applied, setApplied] = useState(null);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [name, setName] = useState(profile?.name || '');
+  const [phone, setPhone] = useState(profile?.phone || '');
   const [placing, setPlacing] = useState(false);
 
   const sub = subtotal();
@@ -39,6 +42,8 @@ export default function CartSheet({ open, onClose, d, restaurant, onPlaced }) {
         couponCode: applied ? coupon.trim() : undefined,
         customer: (name || phone) ? { name: name.trim() || undefined, phone: phone.trim() || undefined } : undefined,
       }));
+      // Remember the guest so their next visit is prefilled.
+      if (name.trim() || phone.trim()) setProfile({ name: name.trim(), phone: phone.trim() });
       clear();
       toast.success(`Order ${res.orderNumber} placed!`);
       onPlaced(res);

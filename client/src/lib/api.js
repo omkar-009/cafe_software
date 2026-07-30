@@ -1,6 +1,16 @@
 import axios from 'axios';
 
-const API_BASE = (import.meta.env.VITE_API_URL || '') + '/api/v1';
+const API_ORIGIN = import.meta.env.VITE_API_URL || '';
+const API_BASE = API_ORIGIN + '/api/v1';
+
+/**
+ * Absolute URL for a browser navigation to an API path (window.open / <a href>
+ * / PDF downloads). Unlike axios calls, these bypass the baseURL, so in a
+ * cross-origin deploy (Vercel + Render) they MUST include the API origin —
+ * otherwise they hit the static host, get SPA-rewritten, and bounce to /login.
+ * In dev, VITE_API_URL is empty so this stays relative (Vite proxy handles it).
+ */
+export const apiUrl = (path) => `${API_ORIGIN}${path.startsWith('/') ? '' : '/'}${path}`;
 
 export function getCookie(name) {
   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
