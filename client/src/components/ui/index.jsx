@@ -111,7 +111,7 @@ export function Modal({ open, onClose, title, children, className }) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 12 }}
             transition={{ type: 'spring', damping: 24, stiffness: 300 }}
-            className={cn('glass-strong relative z-10 w-full max-w-lg rounded-2xl p-6', className)}
+            className={cn('glass-strong relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl p-5 sm:p-6', className)}
           >
             {title && (
               <div className="mb-4 flex items-center justify-between">

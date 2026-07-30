@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
+import { fmtDateTime } from '@/lib/format';
 import { ReceiptText, Download, CreditCard, Pencil, Trash2, Minus, Plus, Save } from 'lucide-react';
 import api, { request } from '@/lib/api';
 import { money } from '@/lib/cn';
@@ -46,6 +47,11 @@ export default function OrdersPage() {
             <option value="">All statuses</option>
             {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </Select>
+          <Button variant="outline" size="sm" onClick={() => {
+            const p = new URLSearchParams({ from: range.from, to: range.to, format: 'xlsx' });
+            if (status) p.set('status', status);
+            window.open(`/api/v1/orders/export?${p}`, '_blank');
+          }}><Download className="h-4 w-4" /> Export</Button>
         </div>
       </div>
 
@@ -66,7 +72,7 @@ export default function OrdersPage() {
                       <td className="px-4 py-3 font-medium">{money(o.total_amount)}</td>
                       <td className="px-4 py-3"><Badge tone={STATUS_TONE[o.status]}>{o.status}</Badge></td>
                       <td className="px-4 py-3"><Badge tone={o.payment_status === 'PAID' ? 'green' : 'gray'}>{o.payment_status}</Badge></td>
-                      <td className="px-4 py-3 text-zinc-400">{dayjs(o.created_at).format('DD MMM HH:mm')}</td>
+                      <td className="px-4 py-3 text-zinc-400">{fmtDateTime(o.created_at)}</td>
                       <td className="px-4 py-3"><Button variant="ghost" size="sm" onClick={() => setDetail(o.id)}>View</Button></td>
                     </tr>
                   ))}

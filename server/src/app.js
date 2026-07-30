@@ -10,7 +10,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
 
-import env from './config/env.js';
+import env, { isDev } from './config/env.js';
 import logger from './config/logger.js';
 import requestContext from './middleware/requestContext.js';
 import csrfProtection from './middleware/csrf.js';
@@ -35,11 +35,16 @@ export function createApp() {
     }),
   );
 
-  // CORS — explicit allow-list, credentials enabled for cookie auth
+  // CORS — allow-list in production; in development reflect any origin so the
+  // app works when opened from a phone/tablet on the LAN (QR testing) or a LAN IP.
   app.use(
     cors({
       origin(origin, cb) {
-        if (!origin || env.CORS_ORIGINS.includes(origin)) return cb(null, true);
+        if (!origin || isDev || env.CORS_ORIGINS.includes(origin)) return cb(null, true);
+        // Allow private-LAN origins (192.168.x, 10.x, 172.16–31.x) for on-site devices.
+        if (/^https?:\/\/(?:localhost|127\.0\.0\.1|10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(origin)) {
+          return cb(null, true);
+        }
         return cb(new Error(`Origin ${origin} not allowed by CORS`));
       },
       credentials: true,

@@ -78,7 +78,8 @@ export function buildQrUrl(table) {
     qrVersion: table.qr_version,
   });
   const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  return `${env.CLIENT_URL}/order?d=${encoded}`;
+  // PUBLIC_URL wins so QR codes point at a phone-reachable host (LAN IP / domain).
+  return `${env.PUBLIC_URL || env.CLIENT_URL}/order?d=${encoded}`;
 }
 
 /** Return the QR as a PNG data URL plus the encoded deep link. */

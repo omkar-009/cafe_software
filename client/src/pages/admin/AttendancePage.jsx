@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
+import { fmtTime } from '@/lib/format';
 import { CalendarCheck, Download, Wallet, Clock } from 'lucide-react';
 import api, { request } from '@/lib/api';
 import { money } from '@/lib/cn';
@@ -11,7 +12,7 @@ import EmployeeCalendarModal from '@/components/admin/EmployeeCalendarModal';
 
 const STATUSES = ['PRESENT', 'ABSENT', 'HALF_DAY', 'LEAVE', 'WEEKLY_OFF'];
 const TONE = { PRESENT: 'green', ABSENT: 'red', HALF_DAY: 'amber', LEAVE: 'blue', WEEKLY_OFF: 'gray' };
-const time = (t) => (t ? dayjs(t).format('HH:mm') : '—');
+const time = fmtTime;
 
 export default function AttendancePage() {
   const [view, setView] = useState('register');

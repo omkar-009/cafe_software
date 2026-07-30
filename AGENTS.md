@@ -210,7 +210,7 @@ Auth cookies: `rs_access` (15m), `rs_refresh` (7d, rotating), `rs_csrf` (JS-read
 | **menu** | `GET/POST /menu`, `GET/PATCH/DELETE /menu/:id`, `PATCH /menu/:id/toggle` |
 | **tables** | `GET/POST /tables`, `GET/PATCH/DELETE /tables/:id`, `GET /tables/:id/qr`, `POST /tables/:id/qr/regenerate`; floors: `GET/POST /tables/floors`, `PATCH/DELETE /tables/floors/:id` |
 | **coupons** | `GET/POST /coupons`, `GET/PATCH/DELETE /coupons/:id` |
-| **orders** | `GET /orders`, `GET /orders/:id`, `GET /orders/kitchen/queue`, `POST /orders`, `PATCH /orders/:id/status`, `POST /orders/:id/serve`, `POST /orders/:id/cancel` |
+| **orders** | `GET /orders` (filters incl. `from/to` date range), `GET /orders/export?format=csv|xlsx` (admin, `report:export`), `GET /orders/:id`, `GET /orders/kitchen/queue`, `POST /orders`, `PATCH /orders/:id/status`, `PATCH /orders/:id` (admin override/edit), `POST /orders/:id/serve`, `POST /orders/:id/cancel` |
 | **billing** | `POST /billing/orders/:orderId/pay`, `GET /billing/orders/:orderId/invoice`, `GET /billing/orders/:orderId/invoice.pdf` |
 | **public** (no auth; QR payload `d`) | `GET /public/resolve?d=`, `POST /public/orders`, `GET /public/orders/:orderId?d=`, `POST /public/coupon/preview` |
 | **notifications** | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read` |
@@ -342,6 +342,13 @@ Seeds: demo-cafe tenant (branding set), PRO subscription, 8 tables/Ground Floor,
    transitions → 400. Payment on a SERVED order auto-COMPLETES it.
 8. **Adding an enum value** (status/food_type/etc.) = new migration altering the `CHECK` constraint,
    plus update `shared/constants.js` and any frontend tone maps.
+9. **QR must be reachable from the scanning device.** Table QR links use `PUBLIC_URL || CLIENT_URL`
+   (`tables.service.js`). `localhost` only works on the dev machine — for phone testing set
+   `PUBLIC_URL=http://<LAN-IP>:5173` (printed in the boot log) and run the client with `host:true`
+   (already set in `vite.config.js`); in prod set it to the domain. Dev CORS + socket.io reflect
+   any origin (and private-LAN origins in prod) so on-site devices work.
+10. **Times are 12-hour** in the UI via `lib/format.js` (`fmtTime`/`fmtDateTime`); `<input type=time>`
+    still needs 24h `HH:mm`, so don't route those through the formatter.
 
 ---
 

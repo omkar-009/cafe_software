@@ -14,6 +14,7 @@ const router = Router();
 router.use(authenticate, requireTenant);
 
 router.get('/', requirePermission(PERMISSIONS.ORDER_VIEW), validate({ query: listOrdersSchema }), ctrl.list);
+router.get('/export', requirePermission(PERMISSIONS.REPORT_EXPORT), ctrl.exportOrders);
 router.get('/kitchen/queue', requirePermission(PERMISSIONS.ORDER_VIEW), ctrl.kitchenQueue);
 router.get('/:id', requirePermission(PERMISSIONS.ORDER_VIEW), validate({ params: idParamSchema }), ctrl.getOne);
 

@@ -15,7 +15,7 @@
  */
 import { Server } from 'socket.io';
 import cookie from 'cookie';
-import env from '../config/env.js';
+import env, { isDev } from '../config/env.js';
 import logger from '../config/logger.js';
 import { verifyAccessToken } from '../shared/security.js';
 import { ACCESS_COOKIE } from '../shared/cookies.js';
@@ -43,7 +43,8 @@ function authenticateSocket(socket, next) {
 
 export function initSocket(httpServer) {
   io = new Server(httpServer, {
-    cors: { origin: env.CORS_ORIGINS, credentials: true },
+    // Dev: reflect any origin (LAN devices); prod: the configured allow-list.
+    cors: { origin: isDev ? true : env.CORS_ORIGINS, credentials: true },
     transports: ['websocket', 'polling'],
     path: '/socket.io',
   });

@@ -9,8 +9,13 @@ export default defineConfig({
     alias: { '@': path.resolve(process.cwd(), 'src') },
   },
   server: {
+    // host:true binds to 0.0.0.0 so a phone/tablet on the same Wi-Fi can open
+    // the app (and scan table QR codes) via the machine's LAN IP.
+    host: true,
     port: 5173,
     proxy: {
+      // Same-origin proxy → the phone hits <LAN-IP>:5173/api which forwards to
+      // the API on this machine; no CORS/cookie issues.
       '/api': { target: 'http://localhost:4000', changeOrigin: true },
       '/socket.io': { target: 'http://localhost:4000', ws: true, changeOrigin: true },
     },

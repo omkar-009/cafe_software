@@ -32,7 +32,9 @@ export function renderInvoicePdf(snapshot) {
     doc.text(`Invoice: ${invoiceNumber}`);
     doc.text(`Order: ${order.orderNumber}`);
     if (order.tableNumber) doc.text(`Table: ${order.tableNumber}`);
-    doc.text(`Date: ${new Date(issuedAt).toLocaleString()}`);
+    doc.text(`Date: ${new Date(issuedAt).toLocaleString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true,
+    })}`);
     doc.moveDown(0.5);
 
     // Items table

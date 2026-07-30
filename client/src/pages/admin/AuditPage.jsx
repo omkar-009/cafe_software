@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
+import { fmtDateTime } from '@/lib/format';
 import { ScrollText, Download, Search } from 'lucide-react';
 import api, { request } from '@/lib/api';
 import { Card, Button, Select, Badge, EmptyState, Skeleton } from '@/components/ui';
@@ -51,7 +52,7 @@ export default function AuditPage() {
                 <tbody>
                   {logs.map((l) => (
                     <tr key={l.id} className="border-b border-zinc-100 dark:border-zinc-800/50">
-                      <td className="whitespace-nowrap px-4 py-3 text-zinc-400">{dayjs(l.created_at).format('DD MMM HH:mm')}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-zinc-400">{fmtDateTime(l.created_at)}</td>
                       <td className="px-4 py-3"><Badge tone="blue">{l.module}</Badge></td>
                       <td className="px-4 py-3 font-medium">{l.action}</td>
                       <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">{l.description}</td>

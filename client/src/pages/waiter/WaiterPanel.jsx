@@ -63,12 +63,16 @@ export default function WaiterPanel() {
   const all = data?.orders || [];
   const orders = useMemo(() => all.filter(TABS.find((t) => t.key === tab).match), [all, tab]);
 
-  // Mini dashboard stats for the selected range.
+  // Mini dashboard stats for the selected range (follows the date filter).
+  const ACTIVE = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'DELAYED'];
   const stats = useMemo(() => ({
+    total: all.length,
+    pending: all.filter((o) => ACTIVE.includes(o.status)).length,
     served: all.filter((o) => o.served_at || ['SERVED', 'COMPLETED'].includes(o.status)).length,
-    pendingPay: all.filter((o) => o.status === 'SERVED' && o.payment_status !== 'PAID').length,
+    pendingPay: all.filter((o) => o.status !== 'CANCELLED' && o.payment_status !== 'PAID').length,
     collected: all.filter((o) => o.payment_status === 'PAID').reduce((s, o) => s + Number(o.total_amount), 0),
   }), [all]);
+  const isToday = preset === 'today';
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -87,11 +91,15 @@ export default function WaiterPanel() {
         </div>
       </header>
 
-      {/* Mini dashboard */}
-      <div className="grid grid-cols-3 gap-3 p-4 pb-0">
-        <Stat icon={CheckCircle2} label="Served" value={stats.served} tone="text-purple-500" />
-        <Stat icon={CircleDollarSign} label="Payment due" value={stats.pendingPay} tone="text-amber-500" />
-        <Stat icon={IndianRupee} label="Collected" value={money(stats.collected)} tone="text-emerald-500" />
+      {/* Mini dashboard — reflects the selected date range */}
+      <div className="px-4 pt-4">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">{isToday ? "Today's stats" : 'Stats for selected range'}</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat icon={Users} label={isToday ? 'New today' : 'Orders'} value={stats.total} tone="text-blue-500" />
+          <Stat icon={Clock} label="Pending" value={stats.pending} tone="text-amber-500" />
+          <Stat icon={CheckCircle2} label="Served" value={stats.served} tone="text-purple-500" />
+          <Stat icon={IndianRupee} label="Collected" value={money(stats.collected)} tone="text-emerald-500" />
+        </div>
       </div>
 
       {/* Tabs */}

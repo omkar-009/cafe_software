@@ -1,6 +1,8 @@
+import dayjs from 'dayjs';
 import catchAsync from '../../shared/catchAsync.js';
 import { ok, created } from '../../shared/ApiResponse.js';
 import { parseOffsetPagination, buildOffsetMeta } from '../../shared/pagination.js';
+import { sendExport } from '../../shared/export.js';
 import { getMyTenant } from '../tenants/tenants.service.js';
 import * as service from './orders.service.js';
 
@@ -19,6 +21,45 @@ export const list = catchAsync(async (req, res) => {
     offset,
   });
   return ok(res, { orders: rows }, { meta: buildOffsetMeta({ page, limit, total }) });
+});
+
+export const exportOrders = catchAsync(async (req, res) => {
+  const { rows } = await service.listOrders({
+    tenantId: req.tenantId,
+    status: req.query.status,
+    paymentStatus: req.query.paymentStatus,
+    from: req.query.from,
+    to: req.query.to,
+    limit: 10000,
+    offset: 0,
+  });
+  const data = rows.map((o) => ({
+    order_number: o.order_number,
+    date: dayjs(o.created_at).format('YYYY-MM-DD HH:mm'),
+    table: o.table_number || '',
+    items: o.item_count,
+    subtotal: o.subtotal,
+    discount: o.discount_amount,
+    tax: o.tax_amount,
+    service_charge: o.service_charge,
+    total: o.total_amount,
+    status: o.status,
+    payment_status: o.payment_status,
+  }));
+  return sendExport(res, {
+    format: req.query.format === 'csv' ? 'csv' : 'xlsx',
+    filename: `orders-${dayjs().format('YYYY-MM-DD')}`,
+    sheetName: 'Orders',
+    columns: [
+      { header: 'Order', key: 'order_number' }, { header: 'Date', key: 'date' },
+      { header: 'Table', key: 'table' }, { header: 'Items', key: 'items' },
+      { header: 'Subtotal', key: 'subtotal' }, { header: 'Discount', key: 'discount' },
+      { header: 'Tax', key: 'tax' }, { header: 'Service', key: 'service_charge' },
+      { header: 'Total', key: 'total' }, { header: 'Status', key: 'status' },
+      { header: 'Payment', key: 'payment_status' },
+    ],
+    rows: data,
+  });
 });
 
 export const kitchenQueue = catchAsync(async (req, res) => {

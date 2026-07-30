@@ -22,6 +22,9 @@
   html { -webkit-tap-highlight-color: transparent; }
   body {
     @apply bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased;
+    /* Never let a stray wide element cause the whole page to scroll sideways on
+       phones — wide content (tables, charts) scrolls inside its own container. */
+    @apply overflow-x-hidden;
     font-feature-settings: 'cv11', 'ss01';
   }
   ::-webkit-scrollbar { width: 10px; height: 10px; }

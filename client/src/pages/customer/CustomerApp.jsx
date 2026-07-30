@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import dayjs from 'dayjs';
+import { fmtDateTime } from '@/lib/format';
 import toast from 'react-hot-toast';
 import { Search, Leaf, ShoppingBag, AlertTriangle, ReceiptText, X, ChevronRight, Ticket } from 'lucide-react';
 import api, { request } from '@/lib/api';
@@ -211,7 +212,7 @@ function OrdersDrawer({ open, onClose, orders, onOpen }) {
                     className="flex w-full items-center justify-between rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                     <div>
                       <p className="font-bold">{o.orderNumber}</p>
-                      <p className="text-xs text-zinc-400">{dayjs(o.placedAt).format('DD MMM, HH:mm')}</p>
+                      <p className="text-xs text-zinc-400">{fmtDateTime(o.placedAt)}</p>
                     </div>
                     <span className="flex items-center gap-1 text-sm text-brand-600">Track <ChevronRight className="h-4 w-4" /></span>
                   </button>
