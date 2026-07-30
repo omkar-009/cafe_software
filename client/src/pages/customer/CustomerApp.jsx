@@ -75,24 +75,24 @@ export default function CustomerApp() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-28">
       {/* Header / branding */}
-      <div className="relative aurora">
-        <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
-          {myOrders.length > 0 && (
-            <button onClick={() => setOrdersOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl glass px-3 py-2 text-sm font-semibold shadow-glass">
-              <ReceiptText className="h-4 w-4" /> My Orders
-              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] text-white">{myOrders.length}</span>
-            </button>
-          )}
-          <ThemeToggle />
-        </div>
-        <div className="mx-auto max-w-2xl px-5 pb-6 pt-8">
-          <div className="flex items-center gap-4">
-            {restaurant.logoUrl
-              ? <img src={restaurant.logoUrl} alt="" className="h-16 w-16 rounded-2xl object-cover shadow-glass" />
-              : <div className="grid h-16 w-16 place-items-center rounded-2xl bg-brand-500 text-2xl font-black text-white shadow-glow">{restaurant.name[0]}</div>}
-            <div>
-              <h1 className="text-2xl font-extrabold leading-tight">{restaurant.name}</h1>
+      <div className="aurora">
+        <div className="mx-auto max-w-2xl px-5 pb-6 pt-4">
+          {/* Top action row — kept above the branding so it never overlaps it */}
+          <div className="flex items-center justify-end gap-2">
+            {myOrders.length > 0 && (
+              <button onClick={() => setOrdersOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl glass px-3 py-2 text-sm font-semibold shadow-glass">
+                <ReceiptText className="h-4 w-4" /> My Orders
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-500 px-1 text-[11px] text-white">{myOrders.length}</span>
+              </button>
+            )}
+            <ThemeToggle />
+          </div>
+
+          <div className="mt-3 flex items-center gap-4">
+            <CafeLogo src={restaurant.logoUrl} name={restaurant.name} />
+            <div className="min-w-0">
+              <h1 className="truncate text-2xl font-extrabold leading-tight">{restaurant.name}</h1>
               {table?.tableNumber && <Badge tone="brand" className="mt-1">Table {table.tableNumber}</Badge>}
             </div>
           </div>
@@ -223,6 +223,22 @@ function OrdersDrawer({ open, onClose, orders, onOpen }) {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function CafeLogo({ src, name }) {
+  const [broken, setBroken] = useState(false);
+  const valid = src && /^https?:\/\//.test(src) && !broken;
+  if (valid) {
+    return (
+      <img src={src} alt={name} onError={() => setBroken(true)}
+        className="h-16 w-16 shrink-0 rounded-2xl object-cover shadow-glass" />
+    );
+  }
+  return (
+    <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-brand-500 text-2xl font-black text-white shadow-glow">
+      {name?.[0]?.toUpperCase() || 'R'}
+    </div>
   );
 }
 
