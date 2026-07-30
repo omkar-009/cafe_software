@@ -15,16 +15,16 @@ const TONE = { PRESENT: 'green', ABSENT: 'red', HALF_DAY: 'amber', LEAVE: 'blue'
 const time = fmtTime;
 
 export default function AttendancePage() {
-  const [view, setView] = useState('register');
+  const [view, setView] = useState('summary');
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div><h2 className="text-xl font-bold">Attendance</h2><p className="text-sm text-zinc-500">Daily register &amp; monthly payroll</p></div>
         <div className="flex rounded-xl border border-zinc-200 dark:border-zinc-800 p-1">
-          {['register', 'summary'].map((v) => (
+          {['summary', 'register'].map((v) => (
             <button key={v} onClick={() => setView(v)}
               className={`rounded-lg px-4 py-1.5 text-sm font-semibold capitalize ${view === v ? 'bg-brand-500 text-white' : 'text-zinc-500'}`}>
-              {v === 'register' ? 'Daily register' : 'Monthly summary'}
+              {v === 'summary' ? 'Monthly summary' : 'Daily register'}
             </button>
           ))}
         </div>
