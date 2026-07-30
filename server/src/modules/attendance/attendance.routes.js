@@ -6,7 +6,8 @@ import { requirePermission } from '../../middleware/authorize.js';
 import { PERMISSIONS } from '../../shared/constants.js';
 import * as ctrl from './attendance.controller.js';
 import {
-  markSchema, registerQuerySchema, summaryQuerySchema, postSalariesSchema,
+  markSchema, bulkMarkSchema, registerQuerySchema, summaryQuerySchema,
+  staffMonthSchema, userIdParamSchema, postSalariesSchema,
 } from './attendance.validators.js';
 
 const router = Router();
@@ -21,7 +22,9 @@ router.get('/me', requirePermission(PERMISSIONS.ATTENDANCE_SELF), ctrl.me);
 router.get('/register', requirePermission(PERMISSIONS.ATTENDANCE_VIEW), validate({ query: registerQuerySchema }), ctrl.register);
 router.get('/summary', requirePermission(PERMISSIONS.ATTENDANCE_VIEW), validate({ query: summaryQuerySchema }), ctrl.summary);
 router.get('/summary/export', requirePermission(PERMISSIONS.ATTENDANCE_VIEW), ctrl.exportSummary);
+router.get('/staff/:userId', requirePermission(PERMISSIONS.ATTENDANCE_VIEW), validate({ params: userIdParamSchema, query: staffMonthSchema }), ctrl.staffMonth);
 router.post('/mark', requirePermission(PERMISSIONS.ATTENDANCE_MANAGE), validate({ body: markSchema }), ctrl.mark);
+router.post('/mark-bulk', requirePermission(PERMISSIONS.ATTENDANCE_MANAGE), validate({ body: bulkMarkSchema }), ctrl.markBulk);
 router.post('/post-salaries', requirePermission(PERMISSIONS.ATTENDANCE_MANAGE), validate({ body: postSalariesSchema }), ctrl.postSalaries);
 
 export default router;

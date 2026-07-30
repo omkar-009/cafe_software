@@ -7,6 +7,7 @@ import api, { request } from '@/lib/api';
 import { money } from '@/lib/cn';
 import { Card, Button, Select, Badge, EmptyState, Skeleton } from '@/components/ui';
 import StatCard from '@/components/admin/StatCard';
+import EmployeeCalendarModal from '@/components/admin/EmployeeCalendarModal';
 
 const STATUSES = ['PRESENT', 'ABSENT', 'HALF_DAY', 'LEAVE', 'WEEKLY_OFF'];
 const TONE = { PRESENT: 'green', ABSENT: 'red', HALF_DAY: 'amber', LEAVE: 'blue', WEEKLY_OFF: 'gray' };
@@ -35,6 +36,7 @@ export default function AttendancePage() {
 function Register() {
   const qc = useQueryClient();
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [calendar, setCalendar] = useState(null);
   const { data, isLoading } = useQuery({ queryKey: ['attendance-register', date], queryFn: () => request(api.get(`/attendance/register?date=${date}`)) });
 
   const mark = useMutation({
@@ -64,7 +66,9 @@ function Register() {
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.user_id} className="border-b border-zinc-100 dark:border-zinc-800/50">
-                      <td className="px-4 py-3 font-medium">{r.full_name}</td>
+                      <td className="px-4 py-3 font-medium">
+                        <button onClick={() => setCalendar({ id: r.user_id, fullName: r.full_name })} className="hover:text-brand-500 hover:underline">{r.full_name}</button>
+                      </td>
                       <td className="px-4 py-3 text-zinc-500">{r.role.replace('RESTAURANT_', '')}</td>
                       <td className="px-4 py-3 tabular-nums">{time(r.check_in)}</td>
                       <td className="px-4 py-3 tabular-nums">{time(r.check_out)}</td>
@@ -83,6 +87,7 @@ function Register() {
               </table>
             </div>
           )}
+      {calendar && <EmployeeCalendarModal user={calendar} initialMonth={dayjs(date).format('YYYY-MM')} onClose={() => setCalendar(null)} />}
     </div>
   );
 }
@@ -90,6 +95,7 @@ function Register() {
 function Summary() {
   const qc = useQueryClient();
   const [month, setMonth] = useState(dayjs().format('YYYY-MM'));
+  const [calendar, setCalendar] = useState(null);
   const { data, isLoading } = useQuery({ queryKey: ['attendance-summary', month], queryFn: () => request(api.get(`/attendance/summary?month=${month}`)) });
 
   const post = useMutation({
@@ -129,7 +135,8 @@ function Summary() {
               </thead>
               <tbody>
                 {staff.map((r) => (
-                  <tr key={r.user_id} className="border-b border-zinc-100 dark:border-zinc-800/50">
+                  <tr key={r.user_id} onClick={() => setCalendar({ id: r.user_id, fullName: r.full_name })}
+                    className="cursor-pointer border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30">
                     <td className="px-4 py-3 font-medium">{r.full_name} <span className="text-xs text-zinc-400">{r.role.replace('RESTAURANT_', '')}</span></td>
                     <td className="px-3 py-3 text-center font-semibold text-emerald-600">{r.present}</td>
                     <td className="px-3 py-3 text-center text-red-500">{r.absent}</td>
@@ -144,9 +151,10 @@ function Summary() {
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-xs text-zinc-400">Estimated pay = monthly salary × (present + ½·half-days) ÷ days in month. Set salaries in Staff.</p>
+          <p className="mt-3 text-xs text-zinc-400">Tip: click any staff row to open their calendar and mark/fix days in bulk. Estimated pay = monthly salary × (present + ½·half-days) ÷ days in month.</p>
         </>
       )}
+      {calendar && <EmployeeCalendarModal user={calendar} initialMonth={month} onClose={() => setCalendar(null)} />}
     </div>
   );
 }

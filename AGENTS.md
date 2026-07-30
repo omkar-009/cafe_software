@@ -217,7 +217,7 @@ Auth cookies: `rs_access` (15m), `rs_refresh` (7d, rotating), `rs_csrf` (JS-read
 | **audit-logs** | `GET /audit-logs`, `GET /audit-logs/facets`, `GET /audit-logs/export?format=csv|xlsx` |
 | **analytics** | `GET /analytics/dashboard`, `GET /analytics/reports/sales?format=csv|xlsx` |
 | **finance** | Expenses: `GET/POST /finance/expenses`, `PATCH/DELETE /finance/expenses/:id`, `GET /finance/expenses/export`. P&L: `GET /finance/pnl`, `GET /finance/pnl/trend`, `GET /finance/product-profit`, `GET /finance/product-profit/export`. Perms: `expense:view/manage`, `finance:view` |
-| **attendance** | Self: `POST /attendance/check-in`, `POST /attendance/check-out`, `GET /attendance/me` (perm `attendance:self`, held by all staff). Admin: `GET /attendance/register?date=`, `GET /attendance/summary?month=` (+`/export`), `POST /attendance/mark`, `POST /attendance/post-salaries` (perms `attendance:view/manage`). Payroll estimate = `monthly_salary × (present + ½·half) ÷ daysInMonth`; post-salaries writes one SALARIES expense |
+| **attendance** | Self: `POST /attendance/check-in`, `POST /attendance/check-out`, `GET /attendance/me` (perm `attendance:self`, held by all staff). Admin: `GET /attendance/register?date=`, `GET /attendance/summary?month=` (+`/export`), `GET /attendance/staff/:userId?month=` (calendar), `POST /attendance/mark` (status + optional check-in/out times to fix punches), `POST /attendance/mark-bulk` (many dates, one status), `POST /attendance/post-salaries` (perms `attendance:view/manage`). Payroll estimate = `monthly_salary × (present + ½·half) ÷ daysInMonth`; post-salaries writes one SALARIES expense |
 | **uploads** | `POST /uploads/signed-url`, `GET /uploads/status` |
 | **health** | `GET /health`, `GET /health/ready` |
 
